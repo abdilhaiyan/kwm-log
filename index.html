@@ -4,17 +4,12 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>KWM Logistics | Equipment Log</title>
-    <!-- Tailwind CSS -->
     <script src="https://cdn.tailwindcss.com"></script>
-    <!-- React & Babel -->
     <script src="https://unpkg.com/react@18/umd/react.production.min.js"></script>
     <script src="https://unpkg.com/react-dom@18/umd/react-dom.production.min.js"></script>
     <script src="https://unpkg.com/@babel/standalone/babel.min.js"></script>
-    <!-- Lucide Icons -->
     <script src="https://unpkg.com/lucide@latest"></script>
-    <!-- EmailJS -->
     <script src="https://cdn.jsdelivr.net/npm/@emailjs/browser@3/dist/email.min.js"></script>
-    <!-- Firebase SDK -->
     <script src="https://www.gstatic.com/firebasejs/11.6.1/firebase-app.js"></script>
     <script src="https://www.gstatic.com/firebasejs/11.6.1/firebase-firestore.js"></script>
     <script src="https://www.gstatic.com/firebasejs/11.6.1/firebase-auth.js"></script>
@@ -27,11 +22,9 @@
 </head>
 <body class="bg-slate-50">
     <div id="root"></div>
-
     <script type="text/babel">
         const { useState, useEffect } = React;
 
-        // Firebase Config
         const firebaseConfig = {
             apiKey: "YOUR_API_KEY",
             authDomain: "YOUR_AUTH_DOMAIN",
@@ -166,6 +159,24 @@
                 } finally { setIsProcessing(false); }
             };
 
+            const markAsReturned = async (req) => {
+                setIsProcessing(true);
+                try {
+                    await firebase.firestore.updateDoc(firebase.firestore.doc(db, 'artifacts', 'camera-borrow-wiramas', 'public', 'data', 'borrowing_requests', req.id), { status: 'Returned' });
+                    await emailjs.send(EMAILJS_SERVICE_ID, EMAILJS_TEMPLATE_ID, {
+                        to_email: req.borrowerEmail,
+                        from_name: "KWM Logistics Manager",
+                        borrower_contact: `${req.borrowerEmail} / ${req.borrowerPhone}`,
+                        equipment: req.cameraModel,
+                        purpose: `✅ RETURNED - Thank you for returning the ${req.cameraModel}. Your request is now complete.`
+                    });
+                    handleNotify(`✅ Marked as Returned! Email sent to ${req.borrowerName}`);
+                } catch (err) {
+                    console.error("Error:", err);
+                    handleNotify("❌ Error marking as returned", "error");
+                } finally { setIsProcessing(false); }
+            };
+
             return (
                 <div className="min-h-screen pb-20 bg-slate-50">
                     <header className="max-w-6xl mx-auto p-6 md:p-10 flex flex-col md:flex-row justify-between items-center gap-6">
@@ -214,14 +225,14 @@
                                 {requests.map(req => (
                                     <div key={req.id} className="bg-white p-6 rounded-2xl border-2 border-slate-100 shadow-sm flex flex-col md:flex-row justify-between items-start md:items-center gap-4">
                                         <div className="flex-1">
-                                            <span className={`text-xs font-black px-3 py-1 rounded-full uppercase mb-2 inline-block ${req.status === 'Approved' ? 'bg-emerald-100 text-emerald-700' : req.status === 'Rejected' ? 'bg-red-100 text-red-700' : 'bg-amber-100 text-amber-700'}`}>{req.status}</span>
+                                            <span className={`text-xs font-black px-3 py-1 rounded-full uppercase mb-2 inline-block ${req.status === 'Approved' ? 'bg-emerald-100 text-emerald-700' : req.status === 'Rejected' ? 'bg-red-100 text-red-700' : req.status === 'Returned' ? 'bg-blue-100 text-blue-700' : 'bg-amber-100 text-amber-700'}`}>{req.status}</span>
                                             <h3 className="text-lg font-black text-slate-800 mt-2">{req.borrowerName}</h3>
                                             <p className="text-sm text-slate-600 mt-1">📧 {req.borrowerEmail} | 📱 {req.borrowerPhone}</p>
                                             <p className="text-sm text-slate-600 mt-1">🎥 {req.cameraModel}</p>
                                             <p className="text-sm text-slate-600 mt-1">💬 {req.purpose}</p>
                                         </div>
-                                        <div className="flex gap-2">
-                                            {req.status === 'Pending Approval' ? (
+                                        <div className="flex gap-2 flex-wrap">
+                                            {req.status === 'Pending Approval' && (
                                                 <>
                                                     <button onClick={() => approveRequest(req)} disabled={isProcessing} className="bg-emerald-500 hover:bg-emerald-600 disabled:opacity-50 text-white px-4 py-2 rounded-lg text-xs font-bold">
                                                         ✅ Approve
@@ -230,8 +241,16 @@
                                                         ❌ Reject
                                                     </button>
                                                 </>
-                                            ) : (
-                                                <span className="text-xs text-slate-500">{req.status}</span>
+                                            )}
+                                            {req.status === 'Approved' && (
+                                                <button onClick={() => markAsReturned(req)} disabled={isProcessing} className="bg-blue-500 hover:bg-blue-600 disabled:opacity-50 text-white px-4 py-2 rounded-lg text-xs font-bold">
+                                                    📦 Mark Returned
+                                                </button>
+                                            )}
+                                            {(req.status === 'Returned' || req.status === 'Rejected') && (
+                                                <span className={`text-xs font-bold px-4 py-2 rounded-lg ${req.status === 'Returned' ? 'bg-blue-100 text-blue-700' : 'bg-red-100 text-red-700'}`}>
+                                                    {req.status === 'Returned' ? '✅ Completed' : '❌ Declined'}
+                                                </span>
                                             )}
                                         </div>
                                     </div>
