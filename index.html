@@ -14,6 +14,10 @@
     <script src="https://unpkg.com/lucide@latest"></script>
     <!-- EmailJS -->
     <script src="https://cdn.jsdelivr.net/npm/@emailjs/browser@3/dist/email.min.js"></script>
+    <!-- Firebase SDK -->
+    <script src="https://www.gstatic.com/firebasejs/11.6.1/firebase-app.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/11.6.1/firebase-firestore.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/11.6.1/firebase-auth.js"></script>
     <style>
         @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;700;900&display=swap');
         body { font-family: 'Inter', sans-serif; }
@@ -27,21 +31,29 @@
     <script type="text/babel">
         const { useState, useEffect } = React;
 
-        // Firebase Imports from CDN
-        import { initializeApp } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-app.js";
-        import { getFirestore, collection, addDoc, onSnapshot, updateDoc, doc, deleteDoc } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-firestore.js";
-        import { getAuth, signInAnonymously, onAuthStateChanged } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-auth.js";
+        // Firebase Config - Update these with your actual Firebase credentials
+        const firebaseConfig = {
+            apiKey: "YOUR_API_KEY",
+            authDomain: "YOUR_AUTH_DOMAIN",
+            projectId: "YOUR_PROJECT_ID",
+            storageBucket: "YOUR_STORAGE_BUCKET",
+            messagingSenderId: "YOUR_MESSAGING_SENDER_ID",
+            appId: "YOUR_APP_ID"
+        };
 
-        // CONFIG (Injected from environment)
-        const firebaseConfig = JSON.parse(window.__firebase_config || '{}');
         const appId = window.__app_id || 'camera-borrow-wiramas';
         const MANAGER_PASSCODE = "1234"; 
         const MANAGER_EMAIL = "median0copses@icloud.com";
 
-        // Initialize Firebase
-        const app = initializeApp(firebaseConfig);
-        const auth = getAuth(app);
-        const db = getFirestore(app);
+        // Initialize Firebase using global objects
+        let app, auth, db;
+        try {
+            app = firebase.initializeApp(firebaseConfig);
+            auth = firebase.auth.getAuth(app);
+            db = firebase.firestore.getFirestore(app);
+        } catch (err) {
+            console.error("Firebase initialization error:", err);
+        }
 
         // Icon Component Helper
         const Icon = ({ name, size = 20, className = "" }) => {
@@ -65,8 +77,12 @@
             });
 
             useEffect(() => {
-                const unsubAuth = onAuthStateChanged(auth, (u) => {
-                    if (!u) signInAnonymously(auth);
+                if (!auth) {
+                    console.error("Firebase auth not initialized");
+                    return;
+                }
+                const unsubAuth = auth.onAuthStateChanged((u) => {
+                    if (!u) auth.signInAnonymously();
                     setUser(u);
                 });
                 emailjs.init("9xXuQOjukOJH80SFY");
@@ -74,9 +90,9 @@
             }, []);
 
             useEffect(() => {
-                if (!user) return;
-                const q = collection(db, 'artifacts', appId, 'public', 'data', 'borrowing_requests');
-                return onSnapshot(q, (snapshot) => {
+                if (!user || !db) return;
+                const q = firebase.firestore.collection(db, 'artifacts', appId, 'public', 'data', 'borrowing_requests');
+                return firebase.firestore.onSnapshot(q, (snapshot) => {
                     const docs = snapshot.docs.map(d => ({ id: d.id, ...d.data() }));
                     setRequests(docs.sort((a, b) => b.createdAt - a.createdAt));
                     setTimeout(() => lucide.createIcons(), 100);
@@ -90,12 +106,16 @@
 
             const submitRequest = async (e) => {
                 e.preventDefault();
+                if (!db) {
+                    handleNotify("Database not initialized", "error");
+                    return;
+                }
                 setIsSending(true);
                 const finalCamera = formData.cameraModel === 'Other' ? formData.otherModel : formData.cameraModel;
                 const payload = { ...formData, cameraModel: finalCamera, status: 'Pending Approval', requestedAt: new Date().toLocaleString(), createdAt: Date.now() };
 
                 try {
-                    await addDoc(collection(db, 'artifacts', appId, 'public', 'data', 'borrowing_requests'), payload);
+                    await firebase.firestore.addDoc(firebase.firestore.collection(db, 'artifacts', appId, 'public', 'data', 'borrowing_requests'), payload);
                     await emailjs.send("service_8smn1or", "template_b0j3fwr", {
                         to_email: MANAGER_EMAIL,
                         from_name: formData.borrowerName,
@@ -105,13 +125,19 @@
                     handleNotify("Request Logged Successfully");
                     setFormData({ borrowerName: '', borrowerEmail: '', borrowerPhone: '', cameraModel: 'DJI Osmo Action 6', otherModel: '', purpose: '', returnDate: '', initialCondition: 'Excellent' });
                 } catch (err) {
+                    console.error("Error submitting:", err);
                     handleNotify("Error submitting", "error");
                 } finally { setIsSending(false); }
             };
 
             const updateStatus = async (id, status) => {
-                await updateDoc(doc(db, 'artifacts', appId, 'public', 'data', 'borrowing_requests', id), { status });
-                handleNotify(`Marked as ${status}`);
+                try {
+                    await firebase.firestore.updateDoc(firebase.firestore.doc(db, 'artifacts', appId, 'public', 'data', 'borrowing_requests', id), { status });
+                    handleNotify(`Marked as ${status}`);
+                } catch (err) {
+                    console.error("Error updating status:", err);
+                    handleNotify("Error updating status", "error");
+                }
             };
 
             const copyDetails = (req) => {
