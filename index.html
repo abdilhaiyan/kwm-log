@@ -9,9 +9,7 @@
     <script src="https://unpkg.com/react-dom@18/umd/react-dom.production.min.js"></script>
     <script src="https://unpkg.com/@babel/standalone/babel.min.js"></script>
     <script src="https://unpkg.com/lucide@latest"></script>
-    <script src="https://www.gstatic.com/firebasejs/11.6.1/firebase-app.js"></script>
-    <script src="https://www.gstatic.com/firebasejs/11.6.1/firebase-firestore.js"></script>
-    <script src="https://www.gstatic.com/firebasejs/11.6.1/firebase-auth.js"></script>
+
     <style>
         @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;700;900&display=swap');
         body { font-family: 'Inter', sans-serif; }
@@ -19,240 +17,53 @@
         @keyframes scale-up-center { 0% { transform: scale(0.9); opacity: 0; } 100% { transform: scale(1); opacity: 1; } }
     </style>
 </head>
+
 <body class="bg-slate-50">
     <div id="root"></div>
+
     <script type="text/babel">
+
         const { useState, useEffect } = React;
-
-        const firebaseConfig = {
-            apiKey: "YOUR_API_KEY",
-            authDomain: "YOUR_AUTH_DOMAIN",
-            projectId: "YOUR_PROJECT_ID",
-            storageBucket: "YOUR_STORAGE_BUCKET",
-            messagingSenderId: "YOUR_MESSAGING_SENDER_ID",
-            appId: "YOUR_APP_ID"
-        };
-
-        const MANAGER_PASSCODE = "1234";
-
-        let app, auth, db;
-        try {
-            app = firebase.initializeApp(firebaseConfig);
-            auth = firebase.auth.getAuth(app);
-            db = firebase.firestore.getFirestore(app);
-        } catch (err) {
-            console.error("Firebase initialization error:", err);
-        }
 
         const Icon = ({ name, size = 20, className = "" }) => {
             const LucideIcon = lucide.icons[name];
             return LucideIcon ? <LucideIcon className={className} size={size} /> : null;
         };
 
+        const MANAGER_PASSCODE = "1234";
+
         const App = () => {
-            const [user, setUser] = useState(null);
             const [view, setView] = useState('request');
-            const [requests, setRequests] = useState([]);
             const [isManagerAuthenticated, setIsManagerAuthenticated] = useState(false);
-            const [passcodeAttempt, setPasscodeAttempt] = useState("");
             const [showPasscodeModal, setShowPasscodeModal] = useState(false);
+            const [passcodeAttempt, setPasscodeAttempt] = useState("");
             const [showNotification, setShowNotification] = useState(null);
-            const [isSending, setIsSending] = useState(false);
-            const [isProcessing, setIsProcessing] = useState(false);
+
+            // Mock request list
+            const [requests, setRequests] = useState([
+                {
+                    id: "1",
+                    borrowerName: "John Doe",
+                    borrowerEmail: "john@example.com",
+                    borrowerPhone: "0123456789",
+                    cameraModel: "DJI Osmo Action 6",
+                    purpose: "Video shooting",
+                    status: "Pending Approval"
+                }
+            ]);
 
             const [formData, setFormData] = useState({
-                borrowerName: '', borrowerEmail: '', borrowerPhone: '',
-                cameraModel: 'DJI Osmo Action 6', otherModel: '',
-                purpose: '', returnDate: '', initialCondition: 'Excellent'
+                borrowerName: "",
+                borrowerEmail: "",
+                borrowerPhone: "",
+                cameraModel: "DJI Osmo Action 6",
+                purpose: ""
             });
 
-            useEffect(() => {
-                const unsubAuth = firebase.auth.onAuthStateChanged(auth, (u) => {
-                    if (!u) firebase.auth.signInAnonymously(auth);
-                    setUser(u);
-                });
-                return () => unsubAuth();
-            }, []);
-
-            useEffect(() => {
-                if (!user) return;
-                const q = firebase.firestore.collection(db, 'artifacts', 'camera-borrow-wiramas', 'public', 'data', 'borrowing_requests');
-                return firebase.firestore.onSnapshot(q, (snapshot) => {
-                    const docs = snapshot.docs.map(d => ({ id: d.id, ...d.data() }));
-                    setRequests(docs.sort((a, b) => b.createdAt - a.createdAt));
-                });
-            }, [user]);
-
-            const handleNotify = (msg, type = 'success') => {
-                setShowNotification({ msg, type });
-                setTimeout(() => setShowNotification(null), 4000);
+            const handleNotify = (msg) => {
+                setShowNotification({ msg });
+                setTimeout(() => setShowNotification(null), 3000);
             };
 
-            const submitRequest = async (e) => {
+            const submitRequest = (e) => {
                 e.preventDefault();
-                setIsSending(true);
-                const finalCamera = formData.cameraModel === 'Other' ? formData.otherModel : formData.cameraModel;
-                const payload = {
-                    ...formData,
-                    cameraModel: finalCamera,
-                    status: 'Pending Approval',
-                    requestedAt: new Date().toLocaleString(),
-                    createdAt: Date.now()
-                };
-
-                try {
-                    await firebase.firestore.addDoc(firebase.firestore.collection(db, 'artifacts', 'camera-borrow-wiramas', 'public', 'data', 'borrowing_requests'), payload);
-                    handleNotify("✅ Request Submitted!");
-                    setFormData({ borrowerName: '', borrowerEmail: '', borrowerPhone: '', cameraModel: 'DJI Osmo Action 6', otherModel: '', purpose: '', returnDate: '', initialCondition: 'Excellent' });
-                } catch (err) {
-                    console.error("Error:", err);
-                    handleNotify("⚠️ Submission Error", "error");
-                } finally { setIsSending(false); }
-            };
-
-            const approveRequest = async (req) => {
-                setIsProcessing(true);
-                try {
-                    await firebase.firestore.updateDoc(firebase.firestore.doc(db, 'artifacts', 'camera-borrow-wiramas', 'public', 'data', 'borrowing_requests', req.id), { status: 'Approved' });
-                    handleNotify(`✅ Approved! ${req.borrowerName}`);
-                } catch (err) {
-                    console.error("Error:", err);
-                    handleNotify("❌ Error approving request", "error");
-                } finally { setIsProcessing(false); }
-            };
-
-            const rejectRequest = async (req) => {
-                setIsProcessing(true);
-                try {
-                    await firebase.firestore.updateDoc(firebase.firestore.doc(db, 'artifacts', 'camera-borrow-wiramas', 'public', 'data', 'borrowing_requests', req.id), { status: 'Rejected' });
-                    handleNotify(`❌ Rejected! ${req.borrowerName}`);
-                } catch (err) {
-                    console.error("Error:", err);
-                    handleNotify("❌ Error rejecting request", "error");
-                } finally { setIsProcessing(false); }
-            };
-
-            const markAsReturned = async (req) => {
-                setIsProcessing(true);
-                try {
-                    await firebase.firestore.updateDoc(firebase.firestore.doc(db, 'artifacts', 'camera-borrow-wiramas', 'public', 'data', 'borrowing_requests', req.id), { status: 'Returned' });
-                    handleNotify(`✅ Marked as Returned! ${req.borrowerName}`);
-                } catch (err) {
-                    console.error("Error:", err);
-                    handleNotify("❌ Error marking as returned", "error");
-                } finally { setIsProcessing(false); }
-            };
-
-            return (
-                <div className="min-h-screen pb-20 bg-slate-50">
-                    <header className="max-w-6xl mx-auto p-6 md:p-10 flex flex-col md:flex-row justify-between items-center gap-6">
-                        <div className="flex items-center gap-4">
-                            <div className="bg-slate-900 p-3 rounded-2xl text-white shadow-xl">
-                                <Icon name="Box" size={24} />
-                            </div>
-                            <div>
-                                <h1 className="font-black text-2xl tracking-tighter text-slate-900 leading-none">KWM LOGISTICS</h1>
-                                <p className="text-[10px] font-bold text-slate-400 uppercase tracking-widest mt-1">Equipment Log System</p>
-                            </div>
-                        </div>
-                        <nav className="flex bg-white shadow-lg p-1.5 rounded-[2rem] border border-slate-100">
-                            <button onClick={() => setView('request')} className={`px-8 py-3 rounded-[1.5rem] text-xs font-black tracking-widest uppercase transition-all ${view === 'request' ? 'bg-slate-900 text-white shadow-lg' : 'text-slate-400 hover:text-slate-900'}`}>Form</button>
-                            <button onClick={() => isManagerAuthenticated ? setView('manager') : setShowPasscodeModal(true)} className={`px-8 py-3 rounded-[1.5rem] text-xs font-black tracking-widest uppercase flex items-center gap-2 transition-all ${view === 'manager' ? 'bg-slate-900 text-white shadow-lg' : 'text-slate-400 hover:text-slate-900'}`}>
-                                <Icon name={isManagerAuthenticated ? "Unlock" : "Lock"} size={14} /> Manager
-                            </button>
-                        </nav>
-                    </header>
-
-                    <main className="max-w-6xl mx-auto px-6 mt-4">
-                        {view === 'request' ? (
-                            <div className="bg-white p-8 md:p-12 rounded-[3rem] shadow-2xl border border-slate-100">
-                                <h2 className="text-3xl font-black mb-8 text-slate-800">Equipment Request Form</h2>
-                                <form onSubmit={submitRequest} className="space-y-6">
-                                    <input required placeholder="Staff Name" className="w-full p-4 bg-slate-50 border-2 border-transparent rounded-2xl focus:border-slate-900 outline-none" value={formData.borrowerName} onChange={e => setFormData({...formData, borrowerName: e.target.value})} />
-                                    <div className="grid md:grid-cols-2 gap-4">
-                                        <input required type="email" placeholder="Email" className="p-4 bg-slate-50 border-2 border-transparent rounded-2xl focus:border-slate-900 outline-none" value={formData.borrowerEmail} onChange={e => setFormData({...formData, borrowerEmail: e.target.value})} />
-                                        <input required type="tel" placeholder="Phone" className="p-4 bg-slate-50 border-2 border-transparent rounded-2xl focus:border-slate-900 outline-none" value={formData.borrowerPhone} onChange={e => setFormData({...formData, borrowerPhone: e.target.value})} />
-                                    </div>
-                                    <select className="w-full p-4 bg-slate-50 border-2 border-transparent rounded-2xl focus:border-slate-900 outline-none" value={formData.cameraModel} onChange={e => setFormData({...formData, cameraModel: e.target.value})}>
-                                        <option value="DJI Osmo Action 6">DJI Osmo Action 6</option>
-                                        <option value="Canon EOS R5">Canon EOS R5</option>
-                                        <option value="Sony A7IV">Sony A7IV</option>
-                                        <option value="Other">Other Equipment</option>
-                                    </select>
-                                    <textarea required placeholder="Purpose of use..." className="w-full p-4 bg-slate-50 border-2 border-transparent rounded-2xl h-32 focus:border-slate-900 outline-none" value={formData.purpose} onChange={e => setFormData({...formData, purpose: e.target.value})} />
-                                    <button disabled={isSending} className="w-full bg-slate-900 text-white py-5 rounded-2xl font-black hover:bg-indigo-600 transition-all uppercase tracking-widest disabled:opacity-50">
-                                        {isSending ? "SUBMITTING..." : "SUBMIT REQUEST"}
-                                    </button>
-                                </form>
-                            </div>
-                        ) : (
-                            <div className="space-y-4">
-                                <h2 className="text-4xl font-black text-slate-900 mb-6">Manager Dashboard</h2>
-                                {requests.map(req => (
-                                    <div key={req.id} className="bg-white p-6 rounded-2xl border-2 border-slate-100 shadow-sm flex flex-col md:flex-row justify-between items-start md:items-center gap-4">
-                                        <div className="flex-1">
-                                            <span className={`text-xs font-black px-3 py-1 rounded-full uppercase mb-2 inline-block ${req.status === 'Approved' ? 'bg-emerald-100 text-emerald-700' : req.status === 'Rejected' ? 'bg-red-100 text-red-700' : req.status === 'Returned' ? 'bg-blue-100 text-blue-700' : 'bg-amber-100 text-amber-700'}`}>{req.status}</span>
-                                            <h3 className="text-lg font-black text-slate-800 mt-2">{req.borrowerName}</h3>
-                                            <p className="text-sm text-slate-600 mt-1">📧 {req.borrowerEmail} | 📱 {req.borrowerPhone}</p>
-                                            <p className="text-sm text-slate-600 mt-1">🎥 {req.cameraModel}</p>
-                                            <p className="text-sm text-slate-600 mt-1">💬 {req.purpose}</p>
-                                        </div>
-                                        <div className="flex gap-2 flex-wrap">
-                                            {req.status === 'Pending Approval' && (
-                                                <>
-                                                    <button onClick={() => approveRequest(req)} disabled={isProcessing} className="bg-emerald-500 hover:bg-emerald-600 disabled:opacity-50 text-white px-4 py-2 rounded-lg text-xs font-bold">
-                                                        ✅ Approve
-                                                    </button>
-                                                    <button onClick={() => rejectRequest(req)} disabled={isProcessing} className="bg-red-500 hover:bg-red-600 disabled:opacity-50 text-white px-4 py-2 rounded-lg text-xs font-bold">
-                                                        ❌ Reject
-                                                    </button>
-                                                </>
-                                            )}
-                                            {req.status === 'Approved' && (
-                                                <button onClick={() => markAsReturned(req)} disabled={isProcessing} className="bg-blue-500 hover:bg-blue-600 disabled:opacity-50 text-white px-4 py-2 rounded-lg text-xs font-bold">
-                                                    📦 Mark Returned
-                                                </button>
-                                            )}
-                                            {(req.status === 'Returned' || req.status === 'Rejected') && (
-                                                <span className={`text-xs font-bold px-4 py-2 rounded-lg ${req.status === 'Returned' ? 'bg-blue-100 text-blue-700' : 'bg-red-100 text-red-700'}`}>
-                                                    {req.status === 'Returned' ? '✅ Completed' : '❌ Declined'}
-                                                </span>
-                                            )}
-                                        </div>
-                                    </div>
-                                ))}
-                                {requests.length === 0 && <p className="text-center text-slate-400">No requests</p>}
-                            </div>
-                        )}
-                    </main>
-
-                    {showNotification && (
-                        <div className={`fixed bottom-10 right-10 ${showNotification.type === 'error' ? 'bg-red-600' : 'bg-slate-900'} text-white px-6 py-4 rounded-2xl shadow-2xl scale-up-center z-50 font-bold text-sm`}>
-                            {showNotification.msg}
-                        </div>
-                    )}
-
-                    {showPasscodeModal && (
-                        <div className="fixed inset-0 bg-slate-900/40 backdrop-blur-md flex items-center justify-center p-6 z-50">
-                            <div className="bg-white p-10 rounded-[2.5rem] w-full max-w-sm text-center shadow-2xl border border-slate-100">
-                                <h3 className="text-xl font-black mb-2 text-slate-800">🔐 Manager Access</h3>
-                                <p className="text-slate-400 text-xs mb-8">Enter administrative PIN</p>
-                                <input type="password" autoFocus className="w-full p-4 bg-slate-50 rounded-2xl text-center text-4xl font-mono tracking-widest mb-6 outline-none focus:ring-2 ring-indigo-500" value={passcodeAttempt} onChange={e => setPasscodeAttempt(e.target.value)} maxLength={4} />
-                                <button onClick={() => passcodeAttempt === MANAGER_PASSCODE ? (setIsManagerAuthenticated(true), setShowPasscodeModal(false), setView('manager'), setPasscodeAttempt("")) : (handleNotify("❌ Wrong PIN", "error"), setPasscodeAttempt(""))} className="w-full bg-slate-900 text-white py-4 rounded-2xl font-black tracking-widest hover:bg-indigo-600 transition-all uppercase">
-                                    Unlock
-                                </button>
-                                <button onClick={() => (setShowPasscodeModal(false), setPasscodeAttempt(""))} className="mt-4 text-xs text-slate-400 font-bold">
-                                    Cancel
-                                </button>
-                            </div>
-                        </div>
-                    )}
-                </div>
-            );
-        };
-
-        const root = ReactDOM.createRoot(document.getElementById('root'));
-        root.render(<App />);
-    </script>
-</body>
-</html>
