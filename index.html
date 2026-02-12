@@ -4,66 +4,314 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>KWM Logistics | Equipment Log</title>
+    <!-- Tailwind CSS -->
     <script src="https://cdn.tailwindcss.com"></script>
+    <!-- React & Babel -->
     <script src="https://unpkg.com/react@18/umd/react.production.min.js"></script>
     <script src="https://unpkg.com/react-dom@18/umd/react-dom.production.min.js"></script>
     <script src="https://unpkg.com/@babel/standalone/babel.min.js"></script>
+    <!-- Lucide Icons -->
     <script src="https://unpkg.com/lucide@latest"></script>
-
+    <!-- EmailJS -->
+    <script src="https://cdn.jsdelivr.net/npm/@emailjs/browser@3/dist/email.min.js"></script>
     <style>
         @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;700;900&display=swap');
         body { font-family: 'Inter', sans-serif; }
         .scale-up-center { animation: scale-up-center 0.3s cubic-bezier(0.390, 0.575, 0.565, 1.000) both; }
         @keyframes scale-up-center { 0% { transform: scale(0.9); opacity: 0; } 100% { transform: scale(1); opacity: 1; } }
+        /* Custom scrollbar for desktop */
+        ::-webkit-scrollbar { width: 8px; }
+        ::-webkit-scrollbar-track { background: #f8fafc; }
+        ::-webkit-scrollbar-thumb { background: #cbd5e1; border-radius: 10px; }
     </style>
 </head>
-
-<body class="bg-slate-50">
+<body class="bg-slate-50 text-slate-900">
     <div id="root"></div>
 
     <script type="text/babel">
-
         const { useState, useEffect } = React;
 
+        // Firebase Imports
+        import { initializeApp } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-app.js";
+        import { getFirestore, collection, addDoc, onSnapshot, updateDoc, doc, deleteDoc } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-firestore.js";
+        import { getAuth, signInAnonymously, onAuthStateChanged } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-auth.js";
+
+        // --- CUSTOM CONFIGURATION ---
+        const firebaseConfig = {
+            apiKey: "YOUR_API_KEY",
+            authDomain: "YOUR_AUTH_DOMAIN",
+            projectId: "YOUR_PROJECT_ID",
+            storageBucket: "YOUR_STORAGE_BUCKET",
+            messagingSenderId: "YOUR_MESSAGING_SENDER_ID",
+            appId: "YOUR_APP_ID"
+        };
+        
+        const appId = 'camera-borrow-wiramas';
+        const EMAILJS_PUBLIC_KEY = "9xXuQOjukOJH80SFY";
+        const EMAILJS_SERVICE_ID = "service_8smn1or";
+        const EMAILJS_TEMPLATE_ID = "template_b0j3fwr";
+        const MANAGER_PASSCODE = "1234"; 
+        const MANAGER_EMAIL = "median0copses@icloud.com";
+
+        // Init Firebase
+        const app = initializeApp(firebaseConfig);
+        const auth = getAuth(app);
+        const db = getFirestore(app);
+
+        // Icon Component
         const Icon = ({ name, size = 20, className = "" }) => {
             const LucideIcon = lucide.icons[name];
             return LucideIcon ? <LucideIcon className={className} size={size} /> : null;
         };
 
-        const MANAGER_PASSCODE = "1234";
-
         const App = () => {
+            const [user, setUser] = useState(null);
             const [view, setView] = useState('request');
+            const [requests, setRequests] = useState([]);
             const [isManagerAuthenticated, setIsManagerAuthenticated] = useState(false);
-            const [showPasscodeModal, setShowPasscodeModal] = useState(false);
             const [passcodeAttempt, setPasscodeAttempt] = useState("");
+            const [showPasscodeModal, setShowPasscodeModal] = useState(false);
             const [showNotification, setShowNotification] = useState(null);
-
-            // Mock request list
-            const [requests, setRequests] = useState([
-                {
-                    id: "1",
-                    borrowerName: "John Doe",
-                    borrowerEmail: "john@example.com",
-                    borrowerPhone: "0123456789",
-                    cameraModel: "DJI Osmo Action 6",
-                    purpose: "Video shooting",
-                    status: "Pending Approval"
-                }
-            ]);
-
+            const [isSending, setIsSending] = useState(false);
+            
             const [formData, setFormData] = useState({
-                borrowerName: "",
-                borrowerEmail: "",
-                borrowerPhone: "",
-                cameraModel: "DJI Osmo Action 6",
-                purpose: ""
+                borrowerName: '', borrowerEmail: '', borrowerPhone: '',
+                cameraModel: 'DJI Osmo Action 6', otherModel: '',
+                purpose: '', returnDate: '', initialCondition: 'Excellent'
             });
 
-            const handleNotify = (msg) => {
-                setShowNotification({ msg });
-                setTimeout(() => setShowNotification(null), 3000);
+            useEffect(() => {
+                const unsubAuth = onAuthStateChanged(auth, (u) => {
+                    if (!u) signInAnonymously(auth);
+                    setUser(u);
+                });
+                emailjs.init(EMAILJS_PUBLIC_KEY);
+                return () => unsubAuth();
+            }, []);
+
+            useEffect(() => {
+                if (!user) return;
+                const q = collection(db, 'artifacts', appId, 'public', 'data', 'borrowing_requests');
+                return onSnapshot(q, (snapshot) => {
+                    const docs = snapshot.docs.map(d => ({ id: d.id, ...d.data() }));
+                    setRequests(docs.sort((a, b) => b.createdAt - a.createdAt));
+                });
+            }, [user]);
+
+            const handleNotify = (msg, type = 'success') => {
+                setShowNotification({ msg, type });
+                setTimeout(() => setShowNotification(null), 4000);
             };
 
-            const submitRequest = (e) => {
+            const submitRequest = async (e) => {
                 e.preventDefault();
+                setIsSending(true);
+                const finalCamera = formData.cameraModel === 'Other' ? formData.otherModel : formData.cameraModel;
+                const payload = { 
+                    ...formData, 
+                    cameraModel: finalCamera, 
+                    status: 'Pending Approval', 
+                    requestedAt: new Date().toLocaleString(), 
+                    createdAt: Date.now() 
+                };
+
+                try {
+                    await addDoc(collection(db, 'artifacts', appId, 'public', 'data', 'borrowing_requests'), payload);
+                    await emailjs.send(EMAILJS_SERVICE_ID, EMAILJS_TEMPLATE_ID, {
+                        to_email: MANAGER_EMAIL,
+                        from_name: formData.borrowerName,
+                        borrower_contact: `${formData.borrowerEmail} / ${formData.borrowerPhone}`,
+                        equipment: finalCamera,
+                        purpose: formData.purpose
+                    });
+                    handleNotify("Request Logged Successfully");
+                    setFormData({ borrowerName: '', borrowerEmail: '', borrowerPhone: '', cameraModel: 'DJI Osmo Action 6', otherModel: '', purpose: '', returnDate: '', initialCondition: 'Excellent' });
+                } catch (err) {
+                    handleNotify("Submission Error", "error");
+                } finally { setIsSending(false); }
+            };
+
+            const exportCSV = () => {
+                const headers = ["Staff", "Email", "Phone", "Asset", "Status", "Date", "Condition"];
+                const csvContent = [
+                    headers.join(","),
+                    ...requests.map(r => [
+                        `"${r.borrowerName}"`, 
+                        `"${r.borrowerEmail}"`, 
+                        `"${r.borrowerPhone}"`, 
+                        `"${r.cameraModel}"`, 
+                        `"${r.status}"`, 
+                        `"${r.requestedAt}"`, 
+                        `"${r.initialCondition}"`
+                    ].join(","))
+                ].join("\n");
+                
+                const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });
+                const link = document.createElement("a");
+                link.href = URL.createObjectURL(blob);
+                link.setAttribute("download", `KWM_Asset_Log_${new Date().toLocaleDateString()}.csv`);
+                document.body.appendChild(link);
+                link.click();
+                document.body.removeChild(link);
+                handleNotify("CSV Exported");
+            };
+
+            return (
+                <div className="min-h-screen pb-20 selection:bg-indigo-100">
+                    {/* Header */}
+                    <header className="max-w-6xl mx-auto p-6 md:p-10 flex flex-col md:flex-row justify-between items-center gap-6">
+                        <div className="flex items-center gap-4">
+                            <div className="bg-slate-900 p-3 rounded-2xl text-white shadow-xl">
+                                <Icon name="Box" size={24} />
+                            </div>
+                            <div>
+                                <h1 className="font-black text-2xl tracking-tighter text-slate-900 leading-none">KWM LOGISTICS</h1>
+                                <p className="text-[10px] font-bold text-slate-400 uppercase tracking-widest mt-1">Equipment Log System</p>
+                            </div>
+                        </div>
+                        <nav className="flex bg-white shadow-lg p-1.5 rounded-[2rem] border border-slate-100">
+                            <button onClick={() => setView('request')} className={`px-8 py-3 rounded-[1.5rem] text-xs font-black tracking-widest uppercase transition-all ${view === 'request' ? 'bg-slate-900 text-white shadow-lg' : 'text-slate-400 hover:text-slate-900'}`}>Form</button>
+                            <button onClick={() => isManagerAuthenticated ? setView('manager') : setShowPasscodeModal(true)} className={`px-8 py-3 rounded-[1.5rem] text-xs font-black tracking-widest uppercase flex items-center gap-2 transition-all ${view === 'manager' ? 'bg-slate-900 text-white shadow-lg' : 'text-slate-400 hover:text-slate-900'}`}>
+                                <Icon name={isManagerAuthenticated ? "Unlock" : "Lock"} size={14} /> 
+                                {isManagerAuthenticated ? 'Admin' : 'Manager'}
+                            </button>
+                        </nav>
+                    </header>
+
+                    <main className="max-w-6xl mx-auto px-6 mt-4">
+                        {view === 'request' ? (
+                            <div className="grid lg:grid-cols-12 gap-10">
+                                <div className="lg:col-span-8 bg-white p-8 md:p-12 rounded-[3rem] shadow-2xl shadow-slate-200 border border-slate-50">
+                                    <h2 className="text-3xl font-black mb-10 text-slate-800 tracking-tight">New Borrowing Log</h2>
+                                    <form onSubmit={submitRequest} className="space-y-8">
+                                        <div className="grid md:grid-cols-2 gap-6">
+                                            <div className="space-y-2">
+                                                <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest ml-1">Staff Name</label>
+                                                <input required className="w-full p-4 bg-slate-50 border-2 border-transparent rounded-2xl focus:border-slate-900 focus:bg-white outline-none transition-all font-medium" value={formData.borrowerName} onChange={e => setFormData({...formData, borrowerName: e.target.value})} />
+                                            </div>
+                                            <div className="space-y-2">
+                                                <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest ml-1">Equipment</label>
+                                                <select className="w-full p-4 bg-slate-50 border-2 border-transparent rounded-2xl focus:border-slate-900 focus:bg-white outline-none transition-all font-medium appearance-none" value={formData.cameraModel} onChange={e => setFormData({...formData, cameraModel: e.target.value})}>
+                                                    <option value="DJI Osmo Action 6">DJI Osmo Action 6</option>
+                                                    <option value="Other">Other Equipment</option>
+                                                </select>
+                                            </div>
+                                        </div>
+                                        <div className="grid md:grid-cols-2 gap-6">
+                                            <input required type="email" placeholder="Email Address" className="w-full p-4 bg-slate-50 border-2 border-transparent rounded-2xl focus:border-slate-900 outline-none" value={formData.borrowerEmail} onChange={e => setFormData({...formData, borrowerEmail: e.target.value})} />
+                                            <input required type="tel" placeholder="Phone Number" className="w-full p-4 bg-slate-50 border-2 border-transparent rounded-2xl focus:border-slate-900 outline-none" value={formData.borrowerPhone} onChange={e => setFormData({...formData, borrowerPhone: e.target.value})} />
+                                        </div>
+                                        <textarea required placeholder="Purpose and Location..." className="w-full p-5 bg-slate-50 border-2 border-transparent rounded-2xl h-32 focus:border-slate-900 outline-none" value={formData.purpose} onChange={e => setFormData({...formData, purpose: e.target.value})} />
+                                        <div className="grid md:grid-cols-2 gap-6">
+                                            <div className="space-y-2">
+                                                <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest ml-1">Expected Return</label>
+                                                <input required type="date" className="w-full p-4 bg-slate-50 rounded-2xl outline-none" value={formData.returnDate} onChange={e => setFormData({...formData, returnDate: e.target.value})} />
+                                            </div>
+                                            <div className="space-y-2">
+                                                <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest ml-1">Asset Condition</label>
+                                                <select className="w-full p-4 bg-slate-50 rounded-2xl outline-none" value={formData.initialCondition} onChange={e => setFormData({...formData, initialCondition: e.target.value})}>
+                                                    <option value="Excellent">Excellent</option>
+                                                    <option value="Good">Good</option>
+                                                    <option value="Minor Wear">Minor Wear</option>
+                                                </select>
+                                            </div>
+                                        </div>
+                                        <button disabled={isSending} className="w-full bg-slate-900 text-white py-6 rounded-[2rem] font-black text-lg hover:bg-indigo-600 transition-all active:scale-[0.98] disabled:opacity-50 shadow-xl">
+                                            {isSending ? "LOGGING..." : "SUBMIT LOG REQUEST"}
+                                        </button>
+                                    </form>
+                                </div>
+                                <div className="lg:col-span-4 space-y-6">
+                                    <div className="bg-indigo-600 p-8 rounded-[2.5rem] text-white shadow-xl relative overflow-hidden group">
+                                        <div className="relative z-10">
+                                            <div className="bg-white/20 w-12 h-12 rounded-2xl flex items-center justify-center mb-6"><Icon name="Mail" /></div>
+                                            <h3 className="text-xl font-bold mb-2">Manager Alerts</h3>
+                                            <p className="text-indigo-100 text-xs leading-relaxed">Notifications are sent directly to accounting for verified asset tracking.</p>
+                                        </div>
+                                        <Icon name="Shield" size={150} className="absolute -bottom-10 -right-10 opacity-10 group-hover:rotate-12 transition-transform" />
+                                    </div>
+                                    <div className="bg-white p-8 rounded-[2.5rem] border border-slate-100 text-center shadow-sm">
+                                        <p className="text-[10px] font-black text-slate-400 uppercase tracking-widest mb-4">Security Policy</p>
+                                        <p className="text-[11px] text-slate-500 italic">"Asset accountability rests with the borrower. All equipment must be returned in the logged condition."</p>
+                                    </div>
+                                </div>
+                            </div>
+                        ) : (
+                            <div className="animate-in fade-in slide-in-from-bottom-4 duration-500">
+                                <div className="flex flex-col md:flex-row justify-between items-center mb-10 gap-4">
+                                    <div>
+                                        <h2 className="text-4xl font-black text-slate-900 tracking-tighter">Manager Dashboard</h2>
+                                        <p className="text-emerald-500 text-[10px] font-black tracking-widest uppercase">Live Cloud Database Enabled</p>
+                                    </div>
+                                    <button onClick={exportCSV} className="bg-white border border-slate-200 text-slate-900 px-8 py-3 rounded-2xl font-black text-xs flex items-center gap-2 hover:bg-slate-50 transition-all shadow-sm">
+                                        <Icon name="Download" size={16} /> EXPORT AS CSV
+                                    </button>
+                                </div>
+                                <div className="grid gap-4">
+                                    {requests.map(req => (
+                                        <div key={req.id} className="bg-white p-6 md:p-8 rounded-[2.5rem] border border-slate-100 shadow-sm flex flex-col md:flex-row justify-between items-center gap-6 hover:shadow-lg transition-all group">
+                                            <div className="flex-1 w-full">
+                                                <div className="flex items-center gap-3 mb-2">
+                                                    <span className={`text-[9px] font-black px-4 py-1.5 rounded-full uppercase tracking-widest ${req.status === 'Approved' ? 'bg-emerald-50 text-emerald-600' : 'bg-amber-50 text-amber-600'}`}>{req.status}</span>
+                                                    <span className="text-[10px] text-slate-300 font-bold">{req.requestedAt}</span>
+                                                </div>
+                                                <h3 className="text-xl font-black text-slate-800">{req.borrowerName}</h3>
+                                                <div className="grid md:grid-cols-3 gap-4 mt-4 text-[11px] font-bold text-slate-400 uppercase tracking-tighter">
+                                                    <span className="flex items-center gap-2"><Icon name="Camera" size={12}/> {req.cameraModel}</span>
+                                                    <span className="flex items-center gap-2"><Icon name="Phone" size={12}/> {req.borrowerPhone}</span>
+                                                    <span className="flex items-center gap-2 text-indigo-500"><Icon name="Shield" size={12}/> {req.initialCondition}</span>
+                                                </div>
+                                            </div>
+                                            <div className="flex gap-2 w-full md:w-auto">
+                                                {req.status === 'Pending Approval' ? (
+                                                    <button onClick={async () => await updateDoc(doc(db, 'artifacts', appId, 'public', 'data', 'borrowing_requests', req.id), { status: 'Approved' })} className="flex-1 md:flex-none bg-slate-900 text-white px-8 py-3 rounded-xl text-[10px] font-black tracking-widest shadow-lg hover:bg-emerald-600 transition-all uppercase">Approve</button>
+                                                ) : (
+                                                    <button onClick={() => {
+                                                        const text = `KWM LOG: ${req.borrowerName} for ${req.cameraModel} is APPROVED.`;
+                                                        navigator.clipboard.writeText(text);
+                                                        handleNotify("Status Copied");
+                                                    }} className="flex-1 md:flex-none bg-slate-100 text-slate-500 px-8 py-3 rounded-xl text-[10px] font-black tracking-widest hover:bg-slate-200 transition-all uppercase">Copy Status</button>
+                                                )}
+                                                <button onClick={async () => { if(confirm("Delete Log?")) await deleteDoc(doc(db, 'artifacts', appId, 'public', 'data', 'borrowing_requests', req.id)); }} className="p-3 text-slate-200 hover:text-rose-500 transition-colors"><Icon name="Trash2" size={20}/></button>
+                                            </div>
+                                        </div>
+                                    ))}
+                                    {requests.length === 0 && (
+                                        <div className="text-center py-24 bg-white rounded-[3rem] border-2 border-dashed border-slate-100">
+                                            <p className="text-slate-300 font-black text-xs uppercase tracking-widest">No Active Requests</p>
+                                        </div>
+                                    )}
+                                </div>
+                            </div>
+                        )}
+                    </main>
+
+                    {/* Notification Toast */}
+                    {showNotification && (
+                        <div className="fixed bottom-10 right-10 bg-slate-900 text-white px-6 py-4 rounded-2xl shadow-2xl scale-up-center z-[60] font-bold text-xs flex items-center gap-3">
+                            <Icon name={showNotification.type === 'error' ? 'AlertCircle' : 'CheckCircle'} size={16} />
+                            {showNotification.msg}
+                        </div>
+                    )}
+
+                    {/* Passcode Modal */}
+                    {showPasscodeModal && (
+                        <div className="fixed inset-0 bg-slate-900/40 backdrop-blur-md flex items-center justify-center p-6 z-50">
+                            <div className="bg-white p-10 rounded-[2.5rem] w-full max-w-sm text-center shadow-2xl border border-slate-100">
+                                <h3 className="text-xl font-black mb-2 text-slate-800 tracking-tight">Manager Access</h3>
+                                <p className="text-slate-400 text-xs mb-8">Enter administrative PIN</p>
+                                <input type="password" autoFocus className="w-full p-4 bg-slate-50 rounded-2xl text-center text-4xl font-mono tracking-widest mb-6 outline-none focus:ring-2 ring-indigo-500 transition-all" value={passcodeAttempt} onChange={e => setPasscodeAttempt(e.target.value)} maxLength={4} />
+                                <button onClick={() => passcodeAttempt === MANAGER_PASSCODE ? (setIsManagerAuthenticated(true), setShowPasscodeModal(false), setView('manager'), setPasscodeAttempt("")) : (handleNotify("Wrong PIN", "error"), setPasscodeAttempt(""))} className="w-full bg-slate-900 text-white py-4 rounded-2xl font-black tracking-widest hover:bg-indigo-600 transition-all shadow-lg uppercase">Unlock</button>
+                                <button onClick={() => (setShowPasscodeModal(false), setPasscodeAttempt(""))} className="mt-6 text-[10px] text-slate-400 font-bold uppercase tracking-widest">Cancel</button>
+                            </div>
+                        </div>
+                    )}
+                </div>
+            );
+        };
+
+        const root = ReactDOM.createRoot(document.getElementById('root'));
+        root.render(<App />);
+    </script>
+</body>
+</html>
