@@ -363,6 +363,7 @@
                                                     {duration && <p className="text-[10px] text-white/40 mt-0.5">Borrowing for {duration}</p>}
                                                     {req.returnDate && <p className={`text-[10px] mt-0.5 ${daysInfo?.isOverdue ? 'text-amber-400 font-bold' : 'text-white/50'}`}>Return by: {new Date(req.returnDate).toLocaleDateString()} {daysInfo && `· ${daysInfo.text}`}</p>}
                                                     {req.cameraModel === 'Car' && req.fuelLevel && <p className="text-[10px] text-white/40 mt-0.5">Fuel: {req.fuelLevel}</p>}
+                                                    {req.passedAt && <p className="text-[10px] text-emerald-300 mt-0.5">✓ Passed on {req.passedAt}</p>}
                                                     {req.status === 'Returned' && req.returnCondition && <p className="text-[10px] text-blue-300 mt-0.5">Returned: {req.returnCondition}</p>}
                                                 </div>
                                                 <div className="flex md:flex-col gap-2 shrink-0" onClick={e => e.stopPropagation()}>
@@ -371,6 +372,7 @@
                                                         <button onClick={() => updateStatus(req.id, 'Rejected')} className="flex-1 md:flex-none bg-red-500/80 backdrop-blur-sm text-white px-5 py-2.5 rounded-xl text-[11px] md:text-xs font-bold hover:bg-red-500 transition-all border border-red-400/30">REJECT</button>
                                                     </>)}
                                                     {req.status === 'Approved' && (<>
+                                                        {!req.passedAt && <button onClick={() => updateStatus(req.id, 'Approved', { passedAt: new Date().toLocaleString() })} className="flex-1 md:flex-none bg-amber-500/80 backdrop-blur-sm text-white px-5 py-2.5 rounded-xl text-[11px] md:text-xs font-bold hover:bg-amber-500 transition-all border border-amber-400/30">ITEM PASSED</button>}
                                                         <button onClick={() => { setReturnConditionModal(req); setReturnCondition('Excellent'); }} className="flex-1 md:flex-none bg-blue-500/80 backdrop-blur-sm text-white px-5 py-2.5 rounded-xl text-[11px] md:text-xs font-bold hover:bg-blue-500 transition-all border border-blue-400/30">MARK RETURNED</button>
                                                         <button onClick={() => copyDetails(req)} className="flex-1 md:flex-none bg-white/20 backdrop-blur-sm text-white px-5 py-2.5 rounded-xl text-[11px] md:text-xs font-bold hover:bg-white/30 transition-all border border-white/30">COPY INFO</button>
                                                     </>)}
@@ -447,6 +449,9 @@
                                         <div className="flex justify-between"><span className="text-white/50">Fuel Level</span><span className="text-white font-medium">{detailModal.fuelLevel || 'Not set'}</span></div>
                                     </>)}
                                     {detailModal.cameraModel !== 'Car' && <div className="flex justify-between"><span className="text-white/50">Condition</span><span className="text-white font-medium">{detailModal.initialCondition || 'Not set'}</span></div>}
+                                    {detailModal.passedAt && (<>
+                                        <div className="flex justify-between"><span className="text-white/50">Item Passed On</span><span className="text-emerald-300 font-medium">{detailModal.passedAt}</span></div>
+                                    </>)}
                                     {detailModal.status === 'Returned' && (<>
                                         <hr className="border-white/10" />
                                         <div className="flex justify-between"><span className="text-white/50">Returned On</span><span className="text-white font-medium">{detailModal.returnedAt || 'N/A'}</span></div>
@@ -461,6 +466,7 @@
                                         <button onClick={() => { updateStatus(detailModal.id, 'Rejected'); setDetailModal(null); }} className="flex-1 bg-red-500/80 backdrop-blur-sm text-white py-3 rounded-xl font-bold hover:bg-red-500 transition-all border border-red-400/30">REJECT</button>
                                     </>)}
                                     {detailModal.status === 'Approved' && (<>
+                                        {!detailModal.passedAt && <button onClick={() => { updateStatus(detailModal.id, 'Approved', { passedAt: new Date().toLocaleString() }); setDetailModal({...detailModal, passedAt: new Date().toLocaleString()}); }} className="flex-1 bg-amber-500/80 backdrop-blur-sm text-white py-3 rounded-xl font-bold hover:bg-amber-500 transition-all border border-amber-400/30">ITEM PASSED</button>}
                                         <button onClick={() => { setReturnConditionModal(detailModal); setReturnCondition(detailModal.cameraModel === 'Car' ? detailModal.fuelLevel : 'Excellent'); setDetailModal(null); }} className="flex-1 bg-blue-500/80 backdrop-blur-sm text-white py-3 rounded-xl font-bold hover:bg-blue-500 transition-all border border-blue-400/30">MARK RETURNED</button>
                                         <button onClick={() => copyDetails(detailModal)} className="flex-1 bg-white/20 backdrop-blur-sm text-white py-3 rounded-xl font-bold hover:bg-white/30 transition-all border border-white/30">COPY INFO</button>
                                     </>)}
