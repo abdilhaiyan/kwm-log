@@ -7,9 +7,7 @@
     <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
     <title>KWM Logistics | Equipment Log</title>
     <script src="https://cdn.tailwindcss.com"></script>
-    <script>
-        tailwind.config = { darkMode: 'class' }
-    </script>
+    <script>tailwind.config = { darkMode: 'class' }</script>
     <script src="https://unpkg.com/react@18/umd/react.production.min.js"></script>
     <script src="https://unpkg.com/react-dom@18/umd/react-dom.production.min.js"></script>
     <script src="https://unpkg.com/@babel/standalone/babel.min.js"></script>
@@ -34,20 +32,16 @@
             html { -webkit-overflow-scrolling: touch; }
             button, a { -webkit-tap-highlight-color: transparent; }
             body { padding-bottom: env(safe-area-inset-bottom); }
+            input[type="date"], input[type="time"] { min-height: 40px; padding-top: 8px; padding-bottom: 8px; }
         }
         select option { background: #1e293b; color: #fff; }
-        input[type="date"]::-webkit-calendar-picker-indicator { filter: invert(1); }
-        @media (max-width: 768px) {
-            input[type="date"] { min-height: 40px; padding-top: 8px; padding-bottom: 8px; }
-        }
+        input[type="date"]::-webkit-calendar-picker-indicator, input[type="time"]::-webkit-calendar-picker-indicator { filter: invert(1); }
     </style>
 </head>
 <body class="bg-glass-light dark:bg-glass-dark">
     <div id="root"></div>
-
     <script type="text/babel">
         const { useState, useEffect, useMemo } = React;
-
         const firebaseConfig = {
             apiKey: "AIzaSyCH8tnCz0sgMdElLkza0FuW5aM84GkhgUQ",
             authDomain: "kwm-logistics-camera.firebaseapp.com",
@@ -56,30 +50,20 @@
             messagingSenderId: "393195572454",
             appId: "1:393195572454:web:42676f73a430b075157f27"
         };
-
         const appId = window.__app_id || 'camera-borrow-wiramas';
         const MANAGER_PASSCODE = "1234";
-
         let app, auth, db;
-        try {
-            app = firebase.initializeApp(firebaseConfig);
-            auth = firebase.auth();
-            db = firebase.firestore();
-        } catch (err) {
-            console.error("Firebase initialization error:", err);
-        }
+        try { app = firebase.initializeApp(firebaseConfig); auth = firebase.auth(); db = firebase.firestore(); }
+        catch (err) { console.error("Firebase init error:", err); }
 
         const Icon = ({ name, size = 20, className = "" }) => {
             const LucideIcon = lucide.icons[name];
             return LucideIcon ? <i data-lucide={name.toLowerCase()} className={className} style={{width: size, height: size}}></i> : null;
         };
 
-        const STATUS_COLORS = {
-            'Pending Approval': 'text-amber-300',
-            'Approved': 'text-emerald-300',
-            'Rejected': 'text-red-300',
-            'Returned': 'text-blue-300'
-        };
+        const STATUS_COLORS = { 'Pending Approval': 'text-amber-300', 'Approved': 'text-emerald-300', 'Rejected': 'text-red-300', 'Returned': 'text-blue-300' };
+        const INPUT_CLS = "w-full p-3 md:p-4 bg-white/30 dark:bg-[#252535]/60 backdrop-blur-sm rounded-xl outline-none border border-white/40 dark:border-[#3a3a4a] text-white placeholder-white/60 focus:ring-2 focus:ring-white/50 transition-all";
+        const SELECT_CLS = "w-full p-3 md:p-4 bg-white/30 dark:bg-[#252535]/60 backdrop-blur-sm rounded-xl border border-white/40 dark:border-[#3a3a4a] text-white focus:ring-2 focus:ring-white/50 transition-all";
 
         const App = () => {
             const [user, setUser] = useState(null);
@@ -90,192 +74,205 @@
             const [showPasscodeModal, setShowPasscodeModal] = useState(false);
             const [showNotification, setShowNotification] = useState(null);
             const [isSending, setIsSending] = useState(false);
-            const [isDarkMode, setIsDarkMode] = useState(() => {
-                try { return localStorage.getItem('kwm_dark_mode') === 'true'; }
-                catch { return false; }
-            });
+            const [isDarkMode, setIsDarkMode] = useState(() => { try { return localStorage.getItem('kwm_dark_mode') === 'true'; } catch { return false; } });
             const [formData, setFormData] = useState({
                 borrowerName: '', borrowerEmail: '', borrowerPhone: '',
-                cameraModel: 'DJI Osmo Action 6', otherModel: '',
-                purpose: '', returnDate: '', initialCondition: 'Excellent'
+                cameraModel: 'DJI Osmo Action 6', customEquipment: '',
+                purpose: '', returnDate: '', borrowTime: '',
+                fuelLevel: 'Full', initialCondition: 'Excellent'
             });
-            const [seenRequestIds, setSeenRequestIds] = useState(() => {
-                try { return new Set(JSON.parse(localStorage.getItem('kwm_seen_requests') || '[]')); }
-                catch { return new Set(); }
-            });
+            const [seenRequestIds, setSeenRequestIds] = useState(() => { try { return new Set(JSON.parse(localStorage.getItem('kwm_seen_requests') || '[]')); } catch { return new Set(); } });
             const [returnConditionModal, setReturnConditionModal] = useState(null);
             const [returnCondition, setReturnCondition] = useState('Excellent');
+            const [detailModal, setDetailModal] = useState(null);
+            const [filters, setFilters] = useState({ status: 'All', equipment: 'All', search: '', dateFrom: '', dateTo: '' });
 
             const unseenCount = requests.filter(r => !seenRequestIds.has(r.id)).length;
-
-            const borrowerCounts = useMemo(() => {
-                return requests.reduce((acc, req) => {
-                    acc[req.borrowerEmail] = (acc[req.borrowerEmail] || 0) + 1;
-                    return acc;
-                }, {});
-            }, [requests]);
+            const borrowerCounts = useMemo(() => requests.reduce((acc, r) => { acc[r.borrowerEmail] = (acc[r.borrowerEmail] || 0) + 1; return acc; }, {}), [requests]);
 
             const statusCounts = useMemo(() => {
-                const counts = { pending: 0, approved: 0, overdue: 0, returned: 0, rejected: 0 };
-                const today = new Date();
-                today.setHours(0, 0, 0, 0);
-                requests.forEach(req => {
-                    if (req.status === 'Pending Approval') counts.pending++;
-                    else if (req.status === 'Approved') {
-                        if (req.returnDate && new Date(req.returnDate) < today) counts.overdue++;
-                        else counts.approved++;
-                    }
-                    else if (req.status === 'Returned') counts.returned++;
-                    else if (req.status === 'Rejected') counts.rejected++;
+                const c = { pending: 0, approved: 0, overdue: 0, returned: 0, rejected: 0 };
+                const today = new Date(); today.setHours(0,0,0,0);
+                requests.forEach(r => {
+                    if (r.status === 'Pending Approval') c.pending++;
+                    else if (r.status === 'Approved') { if (r.returnDate && new Date(r.returnDate) < today) c.overdue++; else c.approved++; }
+                    else if (r.status === 'Returned') c.returned++;
+                    else if (r.status === 'Rejected') c.rejected++;
                 });
-                return counts;
+                return c;
             }, [requests]);
 
-            const isOverdue = (req) => {
-                if (req.status !== 'Approved' || !req.returnDate) return false;
-                const today = new Date();
-                today.setHours(0, 0, 0, 0);
-                return new Date(req.returnDate) < today;
-            };
+            const filteredRequests = useMemo(() => {
+                return requests.filter(r => {
+                    if (filters.status !== 'All' && r.status !== filters.status) return false;
+                    if (filters.equipment !== 'All') {
+                        if (filters.equipment === 'Car' && r.cameraModel !== 'Car') return false;
+                        if (filters.equipment === 'DJI Camera' && r.cameraModel !== 'DJI Osmo Action 6') return false;
+                        if (filters.equipment === 'Other' && r.cameraModel !== 'Other') return false;
+                    }
+                    if (filters.search && !r.borrowerName.toLowerCase().includes(filters.search.toLowerCase())) return false;
+                    if (filters.dateFrom && r.returnDate && r.returnDate < filters.dateFrom) return false;
+                    if (filters.dateTo && r.returnDate && r.returnDate > filters.dateTo) return false;
+                    return true;
+                });
+            }, [requests, filters]);
 
-            const getDaysInfo = (req) => {
-                if (!req.returnDate) return null;
-                const today = new Date();
-                today.setHours(0, 0, 0, 0);
-                const returnDate = new Date(req.returnDate);
-                returnDate.setHours(0, 0, 0, 0);
-                const diffDays = Math.ceil((returnDate - today) / (1000 * 60 * 60 * 24));
-                if (req.status === 'Approved') {
-                    if (diffDays < 0) return { text: `${Math.abs(diffDays)} days overdue`, isOverdue: true };
-                    if (diffDays === 0) return { text: 'Due today', isOverdue: false };
-                    return { text: `${diffDays} days left`, isOverdue: false };
+            const isOverdue = (r) => { if (r.status !== 'Approved' || !r.returnDate) return false; const t = new Date(); t.setHours(0,0,0,0); return new Date(r.returnDate) < t; };
+            const getDaysInfo = (r) => {
+                if (!r.returnDate) return null;
+                const t = new Date(); t.setHours(0,0,0,0);
+                const rd = new Date(r.returnDate); rd.setHours(0,0,0,0);
+                const d = Math.ceil((rd - t) / 86400000);
+                if (r.status === 'Approved') {
+                    if (d < 0) return { text: `${Math.abs(d)} days overdue`, isOverdue: true };
+                    if (d === 0) return { text: 'Due today', isOverdue: false };
+                    return { text: `${d} days left`, isOverdue: false };
                 }
                 return null;
             };
+            const getRequestDuration = (r) => { if (!r.returnDate || !r.requestedAt) return null; const d = Math.ceil((new Date(r.returnDate) - new Date(r.requestedAt)) / 86400000); return d > 0 ? `${d} days` : null; };
+            const getEquipmentLabel = (r) => r.cameraModel === 'Other' ? (r.customEquipment || 'Other') : r.cameraModel;
+            const getEquipmentIcon = (r) => r.cameraModel === 'Car' ? 'Car' : r.cameraModel === 'Other' ? 'Package' : 'Camera';
 
-            const getRequestDuration = (req) => {
-                if (!req.returnDate || !req.requestedAt) return null;
-                const submitDate = new Date(req.requestedAt);
-                const returnDate = new Date(req.returnDate);
-                const diffDays = Math.ceil((returnDate - submitDate) / (1000 * 60 * 60 * 24));
-                return diffDays > 0 ? `${diffDays} days` : null;
-            };
+            useEffect(() => { localStorage.setItem('kwm_dark_mode', isDarkMode); document.documentElement.classList.toggle('dark', isDarkMode); }, [isDarkMode]);
+            useEffect(() => { if (!auth) return; const unsub = auth.onAuthStateChanged(u => { if (!u) auth.signInAnonymously(); setUser(u); }); return () => unsub(); }, []);
+            useEffect(() => { if (!user || !db) return; const q = db.collection('artifacts/' + appId + '/public/data/borrowing_requests'); return q.onSnapshot(s => { const docs = s.docs.map(d => ({ id: d.id, ...d.data() })); setRequests(docs.sort((a,b) => b.createdAt - a.createdAt)); setTimeout(() => lucide.createIcons(), 100); }); }, [user]);
+            useEffect(() => { localStorage.setItem('kwm_seen_requests', JSON.stringify([...seenRequestIds])); }, [seenRequestIds]);
 
-            useEffect(() => {
-                localStorage.setItem('kwm_dark_mode', isDarkMode);
-                document.documentElement.classList.toggle('dark', isDarkMode);
-            }, [isDarkMode]);
-
-            useEffect(() => {
-                if (!auth) {
-                    console.error("Firebase auth not initialized");
-                    return;
-                }
-                const unsubAuth = auth.onAuthStateChanged((u) => {
-                    if (!u) auth.signInAnonymously();
-                    setUser(u);
-                });
-                return () => unsubAuth();
-            }, []);
-
-            useEffect(() => {
-                if (!user || !db) return;
-                const q = db.collection('artifacts/' + appId + '/public/data/borrowing_requests');
-                return q.onSnapshot((snapshot) => {
-                    const docs = snapshot.docs.map(d => ({ id: d.id, ...d.data() }));
-                    setRequests(docs.sort((a, b) => b.createdAt - a.createdAt));
-                    setTimeout(() => lucide.createIcons(), 100);
-                });
-            }, [user]);
-
-            useEffect(() => {
-                localStorage.setItem('kwm_seen_requests', JSON.stringify([...seenRequestIds]));
-            }, [seenRequestIds]);
-
-            const handleNotify = (msg, type = 'success') => {
-                setShowNotification({ msg, type });
-                setTimeout(() => setShowNotification(null), 4000);
-            };
-
-            const markRequestsAsSeen = () => {
-                const newIds = requests.map(r => r.id);
-                setSeenRequestIds(prev => {
-                    const updated = new Set(prev);
-                    newIds.forEach(id => updated.add(id));
-                    return updated;
-                });
-            };
+            const handleNotify = (msg, type = 'success') => { setShowNotification({ msg, type }); setTimeout(() => setShowNotification(null), 4000); };
+            const markRequestsAsSeen = () => { const ids = requests.map(r => r.id); setSeenRequestIds(prev => { const u = new Set(prev); ids.forEach(id => u.add(id)); return u; }); };
 
             const submitRequest = async (e) => {
                 e.preventDefault();
-                if (!db) {
-                    handleNotify("Database not initialized", "error");
-                    return;
-                }
+                if (!db) { handleNotify("Database not initialized", "error"); return; }
                 setIsSending(true);
-                const finalCamera = formData.cameraModel === 'Other' ? formData.otherModel : formData.cameraModel;
+                const finalCamera = formData.cameraModel === 'Other' ? formData.customEquipment : formData.cameraModel;
                 const payload = { ...formData, cameraModel: finalCamera, status: 'Pending Approval', requestedAt: new Date().toLocaleString(), createdAt: Date.now() };
-
                 try {
                     await db.collection('artifacts/' + appId + '/public/data/borrowing_requests').add(payload);
                     handleNotify("Request Logged Successfully");
-                    setFormData({ borrowerName: '', borrowerEmail: '', borrowerPhone: '', cameraModel: 'DJI Osmo Action 6', otherModel: '', purpose: '', returnDate: '', initialCondition: 'Excellent' });
-                } catch (err) {
-                    console.error("Error submitting:", err);
-                    handleNotify("Error submitting", "error");
-                } finally { setIsSending(false); }
+                    setFormData({ borrowerName: '', borrowerEmail: '', borrowerPhone: '', cameraModel: 'DJI Osmo Action 6', customEquipment: '', purpose: '', returnDate: '', borrowTime: '', fuelLevel: 'Full', initialCondition: 'Excellent' });
+                } catch (err) { console.error("Error:", err); handleNotify("Error submitting", "error"); }
+                finally { setIsSending(false); }
             };
 
-            const updateStatus = async (id, status, extraData = {}) => {
-                try {
-                    await db.collection('artifacts/' + appId + '/public/data/borrowing_requests').doc(id).update({ status, ...extraData });
-                    handleNotify(`Marked as ${status}`);
-                } catch (err) {
-                    console.error("Error updating status:", err);
-                    handleNotify("Error updating status", "error");
-                }
+            const updateStatus = async (id, status, extra = {}) => {
+                try { await db.collection('artifacts/' + appId + '/public/data/borrowing_requests').doc(id).update({ status, ...extra }); handleNotify(`Marked as ${status}`); }
+                catch (err) { console.error("Error:", err); handleNotify("Error updating", "error"); }
             };
 
-            const markAsReturned = async () => {
-                if (!returnConditionModal) return;
-                await updateStatus(returnConditionModal.id, 'Returned', {
-                    returnedAt: new Date().toLocaleString(),
-                    returnCondition: returnCondition
+            const markAsReturned = async () => { if (!returnConditionModal) return; await updateStatus(returnConditionModal.id, 'Returned', { returnedAt: new Date().toLocaleString(), returnCondition }); setReturnConditionModal(null); setReturnCondition('Excellent'); };
+
+            const copyDetails = (r) => {
+                const equipLabel = getEquipmentLabel(r);
+                let details = `KWM EQUIPMENT REQUEST\nStatus: ${r.status}\n\nStaff: ${r.borrowerName}\nEmail: ${r.borrowerEmail}\nPhone: ${r.borrowerPhone}\nEquipment: ${equipLabel}\nPurpose: ${r.purpose}\nReturn Date: ${r.returnDate || 'Not set'}\n`;
+                if (r.cameraModel === 'Car') { details += `Borrow Time: ${r.borrowTime || 'Not set'}\nFuel Level: ${r.fuelLevel || 'Not set'}\n`; }
+                else { details += `Condition: ${r.initialCondition || 'Not set'}\n`; }
+                if (r.status === 'Approved') details += '\nApproved. Please proceed to pickup.';
+                else if (r.status === 'Returned') details += `\nReturned on ${r.returnedAt || 'N/A'}. Condition: ${r.returnCondition || 'N/A'}`;
+                else if (r.status === 'Rejected') details += '\nRequest rejected.';
+                const tryCopy = async () => {
+                    try {
+                        if (navigator.clipboard && window.isSecureContext) {
+                            await navigator.clipboard.writeText(details);
+                            handleNotify("Details Copied!");
+                            return;
+                        }
+                    } catch {}
+                    try {
+                        const ta = document.createElement('textarea');
+                        ta.value = details;
+                        ta.style.cssText = 'position:fixed;top:50%;left:50%;transform:translate(-50%,-50%);opacity:0.01;z-index:9999;width:1px;height:1px;';
+                        document.body.appendChild(ta);
+                        ta.focus();
+                        ta.select();
+                        ta.setSelectionRange(0, ta.value.length);
+                        document.execCommand('copy');
+                        document.body.removeChild(ta);
+                        handleNotify("Details Copied!");
+                    } catch {
+                        prompt('Copy this text:', details);
+                    }
+                };
+                tryCopy();
+            };
+
+            const exportCSV = (data) => {
+                const rows = [['Date Requested','Staff Name','Email','Phone','Equipment','Purpose','Return Date','Status','Condition/Fuel','Borrow Time']];
+                data.forEach(r => {
+                    const equipLabel = getEquipmentLabel(r);
+                    rows.push([r.requestedAt || '', r.borrowerName, r.borrowerEmail, r.borrowerPhone, equipLabel, r.purpose, r.returnDate || '', r.status, r.cameraModel === 'Car' ? r.fuelLevel : r.initialCondition, r.borrowTime || '']);
                 });
-                setReturnConditionModal(null);
-                setReturnCondition('Excellent');
+                const csv = rows.map(row => row.map(c => `"${(c||'').toString().replace(/"/g,'""')}"`).join(',')).join('\n');
+                const blob = new Blob([csv], { type: 'text/csv' });
+                const url = URL.createObjectURL(blob);
+                const a = document.createElement('a'); a.href = url; a.download = `kwm-requests-${new Date().toISOString().slice(0,10)}.csv`; a.click();
+                URL.revokeObjectURL(url);
+                handleNotify(`Exported ${data.length} requests`);
             };
 
-            const copyDetails = (req) => {
-                let statusMsg = '';
-                if (req.status === 'Approved') statusMsg = 'Approved. Please proceed to pickup.';
-                else if (req.status === 'Returned') statusMsg = `Returned on ${req.returnedAt || 'N/A'}. Condition: ${req.returnCondition || 'N/A'}`;
-                else if (req.status === 'Rejected') statusMsg = 'Request rejected.';
-                else statusMsg = `Status: ${req.status}`;
+            const updateForm = (key, val) => setFormData(prev => ({ ...prev, [key]: val }));
 
-                const text = `KWM EQUIPMENT REQUEST\nStatus: ${req.status}\n\nStaff: ${req.borrowerName}\nContact: ${req.borrowerPhone}\nEmail: ${req.borrowerEmail}\nEquipment: ${req.cameraModel}\nPurpose: ${req.purpose}\nReturn Date: ${req.returnDate || 'Not set'}\nCondition: ${req.initialCondition || 'Not set'}\n\n${statusMsg}`;
-                navigator.clipboard.writeText(text).then(() => {
-                    handleNotify("Details Copied!");
-                }).catch(() => {
-                    const el = document.createElement('textarea');
-                    el.value = text;
-                    document.body.appendChild(el);
-                    el.select();
-                    document.execCommand('copy');
-                    document.body.removeChild(el);
-                    handleNotify("Details Copied!");
-                });
-            };
-
-            const getEquipmentAvailability = (cameraModel) => {
-                const borrowed = requests.find(r => r.cameraModel === cameraModel && r.status === 'Approved');
-                if (borrowed) return { available: false, borrower: borrowed.borrowerName, returnDate: borrowed.returnDate };
-                return { available: true };
+            const renderFormFields = () => {
+                const eq = formData.cameraModel;
+                return (
+                    <>
+                        <input required placeholder="Staff Name" className={INPUT_CLS} value={formData.borrowerName} onChange={e => updateForm('borrowerName', e.target.value)} />
+                        <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
+                            <input required type="email" placeholder="Email" inputMode="email" className={INPUT_CLS} value={formData.borrowerEmail} onChange={e => updateForm('borrowerEmail', e.target.value)} />
+                            <input required type="tel" placeholder="Phone" inputMode="tel" className={INPUT_CLS} value={formData.borrowerPhone} onChange={e => updateForm('borrowerPhone', e.target.value)} />
+                        </div>
+                        {eq === 'Other' && <input required placeholder="Equipment name (e.g. Tripod, Drone, Laptop)" className={INPUT_CLS} value={formData.customEquipment} onChange={e => updateForm('customEquipment', e.target.value)} />}
+                        <select className={SELECT_CLS} value={formData.cameraModel} onChange={e => updateForm('cameraModel', e.target.value)}>
+                            <option value="DJI Osmo Action 6">DJI Osmo Action 6</option>
+                            <option value="Car">Car</option>
+                            <option value="Other">Other</option>
+                        </select>
+                        <textarea required placeholder="Purpose of use..." className="w-full p-3 md:p-4 bg-white/30 dark:bg-[#252535]/60 backdrop-blur-sm rounded-xl h-20 md:h-28 border border-white/40 dark:border-[#3a3a4a] text-white placeholder-white/60 focus:ring-2 focus:ring-white/50 transition-all resize-none" value={formData.purpose} onChange={e => updateForm('purpose', e.target.value)} />
+                        <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
+                            <div>
+                                <label className="block text-xs font-bold text-white/70 mb-1">Expected Return Date</label>
+                                <input required type="date" className={INPUT_CLS + " h-10 md:h-auto"} value={formData.returnDate} onChange={e => updateForm('returnDate', e.target.value)} />
+                            </div>
+                            {eq === 'Car' ? (
+                                <div>
+                                    <label className="block text-xs font-bold text-white/70 mb-1">Borrow Time</label>
+                                    <input required type="time" className={INPUT_CLS + " h-10 md:h-auto"} value={formData.borrowTime} onChange={e => updateForm('borrowTime', e.target.value)} />
+                                </div>
+                            ) : null}
+                        </div>
+                        {eq === 'Car' ? (
+                            <div>
+                                <label className="block text-xs font-bold text-white/70 mb-1">Fuel Level</label>
+                                <select className={SELECT_CLS} value={formData.fuelLevel} onChange={e => updateForm('fuelLevel', e.target.value)}>
+                                    <option value="1 bar">1 bar</option>
+                                    <option value="2 bar">2 bar</option>
+                                    <option value="3 bar">3 bar</option>
+                                    <option value="4 bar">4 bar</option>
+                                    <option value="Full">Full</option>
+                                </select>
+                            </div>
+                        ) : (
+                            <div>
+                                <label className="block text-xs font-bold text-white/70 mb-1">Equipment Condition</label>
+                                <select className={SELECT_CLS} value={formData.initialCondition} onChange={e => updateForm('initialCondition', e.target.value)}>
+                                    <option value="Excellent">Excellent</option>
+                                    <option value="Good">Good</option>
+                                    <option value="Fair">Fair</option>
+                                    <option value="Damaged">Damaged</option>
+                                </select>
+                            </div>
+                        )}
+                        <button disabled={isSending} className="w-full bg-white/80 dark:bg-white/20 text-slate-900 dark:text-white py-3 md:py-4 rounded-2xl font-black hover:bg-white dark:hover:bg-white/30 transition-all uppercase tracking-widest backdrop-blur-sm border border-white/50 dark:border-[#3a3a4a]">
+                            {isSending ? "Processing..." : "Submit Log"}
+                        </button>
+                    </>
+                );
             };
 
             return (
                 <div className="min-h-screen pb-20">
-                    <header className="max-w-6xl mx-auto p-4 md:p-6">
+                    <header className="max-w-6xl mx-auto p-3 md:p-6">
                         <div className="flex flex-col md:flex-row justify-between items-center gap-3">
                             <div className="flex items-center gap-3">
                                 <div className="bg-white/20 dark:bg-[#2a2a3a]/70 backdrop-blur-sm p-2 rounded-xl border border-white/30 dark:border-[#3a3a4a] text-white"><Icon name="Box" /></div>
@@ -286,9 +283,7 @@
                                     <button onClick={() => setView('request')} className={`flex-1 md:flex-none px-4 md:px-6 py-2.5 rounded-xl text-[11px] md:text-xs font-bold transition-all ${view === 'request' ? 'bg-white/80 dark:bg-white/20 text-slate-900 dark:text-white' : 'text-white/60 hover:text-white/80'}`}>Form</button>
                                     <button onClick={() => { if (isManagerAuthenticated) { setView('manager'); markRequestsAsSeen(); } else { setShowPasscodeModal(true); } }} className={`relative flex-1 md:flex-none px-4 md:px-6 py-2.5 rounded-xl text-[11px] md:text-xs font-bold transition-all ${view === 'manager' ? 'bg-white/80 dark:bg-white/20 text-slate-900 dark:text-white' : 'text-white/60 hover:text-white/80'}`}>
                                         Manager
-                                        {unseenCount > 0 && (
-                                            <span className="absolute -top-1.5 -right-1.5 bg-red-500 text-white text-[9px] font-bold rounded-full min-w-[18px] h-[18px] flex items-center justify-center px-1">{unseenCount > 99 ? '99+' : unseenCount}</span>
-                                        )}
+                                        {unseenCount > 0 && <span className="absolute -top-1.5 -right-1.5 bg-red-500 text-white text-[9px] font-bold rounded-full min-w-[18px] h-[18px] flex items-center justify-center px-1">{unseenCount > 99 ? '99+' : unseenCount}</span>}
                                     </button>
                                 </nav>
                                 <button onClick={() => setIsDarkMode(!isDarkMode)} className="p-2.5 rounded-xl bg-white/20 dark:bg-[#2a2a3a]/70 backdrop-blur-sm border border-white/30 dark:border-[#3a3a4a] text-white hover:bg-white/30 transition-all">
@@ -298,44 +293,43 @@
                         </div>
                     </header>
 
-                    <main className="max-w-4xl mx-auto px-3 md:px-6 mt-4 md:mt-10">
+                    <main className="max-w-4xl mx-auto px-3 md:px-6 mt-3 md:mt-8">
                         {view === 'request' ? (
-                            <div className="glass-card bg-white/20 dark:bg-[#1e1e2a]/80 p-4 md:p-8 lg:p-12 rounded-2xl md:rounded-3xl shadow-xl border border-white/30 dark:border-[#3a3a4a]">
-                                <h2 className="text-xl md:text-3xl font-black mb-4 md:mb-8 text-white">Borrowing Request</h2>
-                                <form onSubmit={submitRequest} className="space-y-3 md:space-y-6">
-                                    <input required placeholder="Staff Name" className="w-full p-3 md:p-4 bg-white/30 dark:bg-[#252535]/60 backdrop-blur-sm rounded-xl outline-none border border-white/40 dark:border-[#3a3a4a] text-white placeholder-white/60 focus:ring-2 focus:ring-white/50 transition-all" value={formData.borrowerName} onChange={e => setFormData({...formData, borrowerName: e.target.value})} />
-                                    <div className="grid grid-cols-1 md:grid-cols-2 gap-3 md:gap-4">
-                                        <input required type="email" placeholder="Email" inputMode="email" className="p-3 md:p-4 bg-white/30 dark:bg-[#252535]/60 backdrop-blur-sm rounded-xl outline-none border border-white/40 dark:border-[#3a3a4a] text-white placeholder-white/60 focus:ring-2 focus:ring-white/50 transition-all" value={formData.borrowerEmail} onChange={e => setFormData({...formData, borrowerEmail: e.target.value})} />
-                                        <input required type="tel" placeholder="Phone" inputMode="tel" className="p-3 md:p-4 bg-white/30 dark:bg-[#252535]/60 backdrop-blur-sm rounded-xl outline-none border border-white/40 dark:border-[#3a3a4a] text-white placeholder-white/60 focus:ring-2 focus:ring-white/50 transition-all" value={formData.borrowerPhone} onChange={e => setFormData({...formData, borrowerPhone: e.target.value})} />
-                                    </div>
-                                    <select className="w-full p-3 md:p-4 bg-white/30 dark:bg-[#252535]/60 backdrop-blur-sm rounded-xl border border-white/40 dark:border-[#3a3a4a] text-white focus:ring-2 focus:ring-white/50 transition-all" value={formData.cameraModel} onChange={e => setFormData({...formData, cameraModel: e.target.value})}>
-                                        <option value="DJI Osmo Action 6">DJI Osmo Action 6</option>
-                                        <option value="Other">Other Equipment</option>
-                                    </select>
-                                    <textarea required placeholder="Purpose of use..." className="w-full p-3 md:p-4 bg-white/30 dark:bg-[#252535]/60 backdrop-blur-sm rounded-xl h-20 md:h-32 border border-white/40 dark:border-[#3a3a4a] text-white placeholder-white/60 focus:ring-2 focus:ring-white/50 transition-all resize-none" value={formData.purpose} onChange={e => setFormData({...formData, purpose: e.target.value})} />
-                                    <div className="grid grid-cols-1 md:grid-cols-2 gap-3 md:gap-4">
-                                        <div>
-                                            <label className="block text-xs font-bold text-white/70 mb-1">Expected Return Date</label>
-                                            <input required type="date" className="w-full p-3 md:p-4 h-10 md:h-auto bg-white/30 dark:bg-[#252535]/60 backdrop-blur-sm rounded-xl outline-none border border-white/40 dark:border-[#3a3a4a] text-white focus:ring-2 focus:ring-white/50 transition-all" value={formData.returnDate} onChange={e => setFormData({...formData, returnDate: e.target.value})} />
-                                        </div>
-                                        <div>
-                                            <label className="block text-xs font-bold text-white/70 mb-1">Equipment Condition</label>
-                                            <select className="w-full p-3 md:p-4 bg-white/30 dark:bg-[#252535]/60 backdrop-blur-sm rounded-xl border border-white/40 dark:border-[#3a3a4a] text-white focus:ring-2 focus:ring-white/50 transition-all" value={formData.initialCondition} onChange={e => setFormData({...formData, initialCondition: e.target.value})}>
-                                                <option value="Excellent">Excellent</option>
-                                                <option value="Good">Good</option>
-                                                <option value="Fair">Fair</option>
-                                                <option value="Damaged">Damaged</option>
-                                            </select>
-                                        </div>
-                                    </div>
-                                    <button disabled={isSending} className="w-full bg-white/80 dark:bg-white/20 text-slate-900 dark:text-white py-3 md:py-5 rounded-2xl font-black hover:bg-white dark:hover:bg-white/30 transition-all uppercase tracking-widest backdrop-blur-sm border border-white/50 dark:border-[#3a3a4a]">
-                                        {isSending ? "Processing..." : "Submit Log"}
-                                    </button>
-                                </form>
+                            <div className="glass-card bg-white/20 dark:bg-[#1e1e2a]/80 p-4 md:p-8 lg:p-10 rounded-2xl md:rounded-3xl shadow-xl border border-white/30 dark:border-[#3a3a4a]">
+                                <h2 className="text-xl md:text-3xl font-black mb-4 md:mb-6 text-white">Borrowing Request</h2>
+                                <form onSubmit={submitRequest} className="space-y-3 md:space-y-4">{renderFormFields()}</form>
                             </div>
                         ) : (
                             <div className="space-y-3 md:space-y-4">
-                                <div className="flex flex-wrap gap-2 mb-4">
+                                {/* Filters */}
+                                <div className="glass-card bg-white/20 dark:bg-[#1e1e2a]/80 p-3 md:p-4 rounded-2xl border border-white/30 dark:border-[#3a3a4a]">
+                                    <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-2 mb-2">
+                                        <input placeholder="Search by name..." className={INPUT_CLS + " text-sm"} value={filters.search} onChange={e => setFilters(p => ({...p, search: e.target.value}))} />
+                                        <select className={SELECT_CLS + " text-sm"} value={filters.status} onChange={e => setFilters(p => ({...p, status: e.target.value}))}>
+                                            <option value="All">All Status</option>
+                                            <option value="Pending Approval">Pending</option>
+                                            <option value="Approved">Approved</option>
+                                            <option value="Returned">Returned</option>
+                                            <option value="Rejected">Rejected</option>
+                                        </select>
+                                        <select className={SELECT_CLS + " text-sm"} value={filters.equipment} onChange={e => setFilters(p => ({...p, equipment: e.target.value}))}>
+                                            <option value="All">All Equipment</option>
+                                            <option value="DJI Camera">DJI Camera</option>
+                                            <option value="Car">Car</option>
+                                            <option value="Other">Other</option>
+                                        </select>
+                                    </div>
+                                    <div className="flex flex-wrap items-center gap-2">
+                                        <input type="date" className={INPUT_CLS + " text-sm w-auto flex-1 md:flex-none"} value={filters.dateFrom} onChange={e => setFilters(p => ({...p, dateFrom: e.target.value}))} />
+                                        <span className="text-white/40 text-xs">to</span>
+                                        <input type="date" className={INPUT_CLS + " text-sm w-auto flex-1 md:flex-none"} value={filters.dateTo} onChange={e => setFilters(p => ({...p, dateTo: e.target.value}))} />
+                                        <button onClick={() => setFilters({ status: 'All', equipment: 'All', search: '', dateFrom: '', dateTo: '' })} className="text-[10px] text-white/50 hover:text-white/80 px-2 py-1 font-bold">CLEAR</button>
+                                        <div className="flex-1"></div>
+                                        <button onClick={() => exportCSV(filteredRequests)} className="flex items-center gap-1 px-3 py-2 rounded-xl bg-white/20 dark:bg-white/10 text-white text-[10px] md:text-xs font-bold hover:bg-white/30 transition-all border border-white/30 dark:border-[#3a3a4a]"><Icon name="Download" size={14} /> EXPORT ({filteredRequests.length})</button>
+                                    </div>
+                                </div>
+
+                                <div className="flex flex-wrap gap-2 mb-2">
                                     {statusCounts.pending > 0 && <span className="px-3 py-1.5 rounded-xl bg-amber-500/20 dark:bg-amber-500/30 text-amber-300 text-xs font-bold border border-amber-400/30 dark:border-amber-400/40">{statusCounts.pending} Pending</span>}
                                     {statusCounts.approved > 0 && <span className="px-3 py-1.5 rounded-xl bg-emerald-500/20 dark:bg-emerald-500/30 text-emerald-300 text-xs font-bold border border-emerald-400/30 dark:border-emerald-400/40">{statusCounts.approved} Active</span>}
                                     {statusCounts.overdue > 0 && <span className="px-3 py-1.5 rounded-xl bg-red-500/20 dark:bg-red-500/30 text-red-300 text-xs font-bold border border-red-400/30 dark:border-red-400/40">{statusCounts.overdue} Overdue</span>}
@@ -343,58 +337,46 @@
                                     {statusCounts.rejected > 0 && <span className="px-3 py-1.5 rounded-xl bg-red-500/20 dark:bg-red-500/30 text-red-300 text-xs font-bold border border-red-400/30 dark:border-red-400/40">{statusCounts.rejected} Rejected</span>}
                                 </div>
 
-                                {requests.length === 0 && (
+                                {filteredRequests.length === 0 && (
                                     <div className="glass-card bg-white/20 dark:bg-[#1e1e2a]/80 p-8 rounded-2xl md:rounded-3xl border border-white/30 dark:border-[#3a3a4a] text-center">
                                         <Icon name="Inbox" size={48} className="text-white/40 mx-auto mb-4" />
-                                        <p className="text-white/60 font-medium">No borrowing requests yet</p>
+                                        <p className="text-white/60 font-medium">{requests.length === 0 ? 'No borrowing requests yet' : 'No requests match your filters'}</p>
                                     </div>
                                 )}
-                                {requests.map(req => {
+                                {filteredRequests.map(req => {
                                     const overdue = isOverdue(req);
                                     const daysInfo = getDaysInfo(req);
                                     const duration = getRequestDuration(req);
                                     const historyCount = borrowerCounts[req.borrowerEmail] || 0;
-                                    const availability = getEquipmentAvailability(req.cameraModel);
-
+                                    const equipLabel = getEquipmentLabel(req);
                                     return (
-                                        <div key={req.id} className={`glass-card bg-white/20 dark:bg-[#1e1e2a]/80 p-4 md:p-6 rounded-2xl border border-white/30 dark:border-[#3a3a4a] flex flex-col md:flex-row md:justify-between md:items-start gap-3 ${overdue ? 'border-l-4 border-l-amber-400 dark:border-l-amber-500' : !seenRequestIds.has(req.id) ? 'border-l-4 border-l-amber-400 dark:border-l-amber-500' : ''}`}>
-                                            <div className="min-w-0 flex-1">
-                                                <div className="flex items-center gap-2 flex-wrap">
-                                                    <p className={`text-[10px] font-black uppercase ${STATUS_COLORS[req.status] || 'text-white/60'}`}>{req.status}</p>
-                                                    {overdue && <span className="text-[10px] font-black uppercase text-amber-400">OVERDUE</span>}
-                                                    {historyCount > 1 && <span className="text-[10px] text-white/50">· {historyCount} requests</span>}
+                                        <div key={req.id} onClick={() => setDetailModal(req)} className={`glass-card bg-white/20 dark:bg-[#1e1e2a]/80 p-4 md:p-5 rounded-2xl border border-white/30 dark:border-[#3a3a4a] cursor-pointer hover:scale-[1.01] transition-all ${overdue ? 'border-l-4 border-l-amber-400 dark:border-l-amber-500' : !seenRequestIds.has(req.id) ? 'border-l-4 border-l-amber-400 dark:border-l-amber-500' : ''}`}>
+                                            <div className="flex flex-col md:flex-row md:justify-between md:items-start gap-3">
+                                                <div className="min-w-0 flex-1">
+                                                    <div className="flex items-center gap-2 flex-wrap">
+                                                        <p className={`text-[10px] font-black uppercase ${STATUS_COLORS[req.status] || 'text-white/60'}`}>{req.status}</p>
+                                                        {overdue && <span className="text-[10px] font-black uppercase text-amber-400">OVERDUE</span>}
+                                                        {historyCount > 1 && <span className="text-[10px] text-white/50">· {historyCount} requests</span>}
+                                                    </div>
+                                                    <h3 className="text-base md:text-lg font-bold text-white truncate">{req.borrowerName}</h3>
+                                                    <p className="text-xs text-white/60 truncate">{equipLabel} · {req.borrowerPhone}</p>
+                                                    {duration && <p className="text-[10px] text-white/40 mt-0.5">Borrowing for {duration}</p>}
+                                                    {req.returnDate && <p className={`text-[10px] mt-0.5 ${daysInfo?.isOverdue ? 'text-amber-400 font-bold' : 'text-white/50'}`}>Return by: {new Date(req.returnDate).toLocaleDateString()} {daysInfo && `· ${daysInfo.text}`}</p>}
+                                                    {req.cameraModel === 'Car' && req.fuelLevel && <p className="text-[10px] text-white/40 mt-0.5">Fuel: {req.fuelLevel}</p>}
+                                                    {req.status === 'Returned' && req.returnCondition && <p className="text-[10px] text-blue-300 mt-0.5">Returned: {req.returnCondition}</p>}
                                                 </div>
-                                                <h3 className="text-base md:text-lg font-bold text-white truncate">{req.borrowerName}</h3>
-                                                <p className="text-xs text-white/60 truncate">{req.cameraModel} • {req.borrowerPhone}</p>
-                                                {duration && <p className="text-[10px] text-white/40 mt-0.5">Borrowing for {duration}</p>}
-                                                {req.returnDate && (
-                                                    <p className={`text-[10px] mt-0.5 ${daysInfo?.isOverdue ? 'text-amber-400 font-bold' : 'text-white/50'}`}>
-                                                        Return by: {new Date(req.returnDate).toLocaleDateString()} {daysInfo && `· ${daysInfo.text}`}
-                                                    </p>
-                                                )}
-                                                {req.status === 'Returned' && req.returnCondition && (
-                                                    <p className="text-[10px] text-blue-300 mt-0.5">Returned: {req.returnCondition} condition</p>
-                                                )}
-                                            </div>
-                                            <div className="flex md:flex-col gap-2 shrink-0">
-                                                {req.status === 'Pending Approval' && (
-                                                    <>
+                                                <div className="flex md:flex-col gap-2 shrink-0" onClick={e => e.stopPropagation()}>
+                                                    {req.status === 'Pending Approval' && (<>
                                                         <button onClick={() => updateStatus(req.id, 'Approved')} className="flex-1 md:flex-none bg-emerald-500/80 backdrop-blur-sm text-white px-5 py-2.5 rounded-xl text-[11px] md:text-xs font-bold hover:bg-emerald-500 transition-all border border-emerald-400/30">APPROVE</button>
                                                         <button onClick={() => updateStatus(req.id, 'Rejected')} className="flex-1 md:flex-none bg-red-500/80 backdrop-blur-sm text-white px-5 py-2.5 rounded-xl text-[11px] md:text-xs font-bold hover:bg-red-500 transition-all border border-red-400/30">REJECT</button>
-                                                    </>
-                                                )}
-                                                {req.status === 'Approved' && (
-                                                    <>
+                                                    </>)}
+                                                    {req.status === 'Approved' && (<>
                                                         <button onClick={() => { setReturnConditionModal(req); setReturnCondition('Excellent'); }} className="flex-1 md:flex-none bg-blue-500/80 backdrop-blur-sm text-white px-5 py-2.5 rounded-xl text-[11px] md:text-xs font-bold hover:bg-blue-500 transition-all border border-blue-400/30">MARK RETURNED</button>
                                                         <button onClick={() => copyDetails(req)} className="flex-1 md:flex-none bg-white/20 backdrop-blur-sm text-white px-5 py-2.5 rounded-xl text-[11px] md:text-xs font-bold hover:bg-white/30 transition-all border border-white/30">COPY INFO</button>
-                                                    </>
-                                                )}
-                                                {req.status === 'Rejected' && (
-                                                    <button onClick={() => updateStatus(req.id, 'Pending Approval')} className="flex-1 md:flex-none bg-white/20 backdrop-blur-sm text-white px-5 py-2.5 rounded-xl text-[11px] md:text-xs font-bold hover:bg-white/30 transition-all border border-white/30">UNDO REJECT</button>
-                                                )}
-                                                {req.status === 'Returned' && (
-                                                    <button onClick={() => copyDetails(req)} className="flex-1 md:flex-none bg-white/20 backdrop-blur-sm text-white px-5 py-2.5 rounded-xl text-[11px] md:text-xs font-bold hover:bg-white/30 transition-all border border-white/30">COPY INFO</button>
-                                                )}
+                                                    </>)}
+                                                    {req.status === 'Rejected' && <button onClick={() => updateStatus(req.id, 'Pending Approval')} className="flex-1 md:flex-none bg-white/20 backdrop-blur-sm text-white px-5 py-2.5 rounded-xl text-[11px] md:text-xs font-bold hover:bg-white/30 transition-all border border-white/30">UNDO REJECT</button>}
+                                                    {req.status === 'Returned' && <button onClick={() => copyDetails(req)} className="flex-1 md:flex-none bg-white/20 backdrop-blur-sm text-white px-5 py-2.5 rounded-xl text-[11px] md:text-xs font-bold hover:bg-white/30 transition-all border border-white/30">COPY INFO</button>}
+                                                </div>
                                             </div>
                                         </div>
                                     );
@@ -403,11 +385,7 @@
                         )}
                     </main>
 
-                    {showNotification && (
-                        <div className="fixed bottom-4 left-4 right-4 md:bottom-10 md:right-10 md:left-auto bg-white/20 dark:bg-[#1e1e2a]/90 backdrop-blur-xl text-white p-4 rounded-2xl shadow-2xl scale-up-center border border-white/30 dark:border-[#3a3a4a] md:max-w-sm">
-                            {showNotification.msg}
-                        </div>
-                    )}
+                    {showNotification && <div className="fixed bottom-4 left-4 right-4 md:bottom-10 md:right-10 md:left-auto bg-white/20 dark:bg-[#1e1e2a]/90 backdrop-blur-xl text-white p-4 rounded-2xl shadow-2xl scale-up-center border border-white/30 dark:border-[#3a3a4a] md:max-w-sm z-40">{showNotification.msg}</div>}
 
                     {showPasscodeModal && (
                         <div className="fixed inset-0 z-50">
@@ -415,7 +393,7 @@
                             <div className="absolute bottom-0 left-0 right-0 md:bottom-auto md:top-1/2 md:left-1/2 md:-translate-x-1/2 md:-translate-y-1/2 glass-card bg-white/20 dark:bg-[#1e1e2a]/90 p-6 md:p-10 rounded-t-2xl md:rounded-3xl w-full max-w-sm mx-auto border border-white/30 dark:border-[#3a3a4a]">
                                 <div className="w-10 h-1 bg-white/30 rounded-full mx-auto mb-4 md:hidden" />
                                 <h3 className="text-lg md:text-xl font-black mb-4 md:mb-6 text-center text-white">Admin Access</h3>
-                                <input type="password" autoFocus className="w-full p-3.5 md:p-4 bg-white/30 dark:bg-[#252535]/60 backdrop-blur-sm rounded-xl text-center text-xl md:text-2xl mb-4 border border-white/40 dark:border-[#3a3a4a] text-white placeholder-white/40 focus:ring-2 focus:ring-white/50 transition-all" value={passcodeAttempt} onChange={e => setPasscodeAttempt(e.target.value)} />
+                                <input type="password" autoFocus className={INPUT_CLS + " text-center text-xl md:text-2xl mb-4 placeholder-white/40"} value={passcodeAttempt} onChange={e => setPasscodeAttempt(e.target.value)} />
                                 <button onClick={() => passcodeAttempt === MANAGER_PASSCODE ? (setIsManagerAuthenticated(true), setShowPasscodeModal(false), setView('manager'), markRequestsAsSeen()) : setPasscodeAttempt("")} className="w-full bg-white/80 dark:bg-white/20 text-slate-900 dark:text-white py-3.5 md:py-4 rounded-xl font-bold hover:bg-white dark:hover:bg-white/30 transition-all border border-white/50 dark:border-[#3a3a4a]">Unlock</button>
                                 <button onClick={() => setShowPasscodeModal(false)} className="w-full mt-3 py-2 text-sm text-white/50 font-bold uppercase hover:text-white/80 transition-all">Cancel</button>
                             </div>
@@ -428,23 +406,73 @@
                             <div className="absolute bottom-0 left-0 right-0 md:bottom-auto md:top-1/2 md:left-1/2 md:-translate-x-1/2 md:-translate-y-1/2 glass-card bg-white/20 dark:bg-[#1e1e2a]/90 p-6 md:p-8 rounded-t-2xl md:rounded-3xl w-full max-w-sm mx-auto border border-white/30 dark:border-[#3a3a4a]">
                                 <div className="w-10 h-1 bg-white/30 rounded-full mx-auto mb-4 md:hidden" />
                                 <h3 className="text-lg md:text-xl font-black mb-2 text-center text-white">Mark as Returned</h3>
-                                <p className="text-xs text-white/60 text-center mb-4">{returnConditionModal.borrowerName} · {returnConditionModal.cameraModel}</p>
-                                <label className="block text-xs font-bold text-white/70 mb-1.5">Return Condition</label>
-                                <select className="w-full p-3.5 md:p-4 bg-white/30 dark:bg-[#252535]/60 backdrop-blur-sm rounded-xl border border-white/40 dark:border-[#3a3a4a] text-white focus:ring-2 focus:ring-white/50 transition-all mb-4" value={returnCondition} onChange={e => setReturnCondition(e.target.value)}>
-                                    <option value="Excellent">Excellent</option>
-                                    <option value="Good">Good</option>
-                                    <option value="Fair">Fair</option>
-                                    <option value="Damaged">Damaged</option>
-                                </select>
+                                <p className="text-xs text-white/60 text-center mb-4">{returnConditionModal.borrowerName} · {getEquipmentLabel(returnConditionModal)}</p>
+                                {returnConditionModal.cameraModel === 'Car' ? (<>
+                                    <label className="block text-xs font-bold text-white/70 mb-1">Return Fuel Level</label>
+                                    <select className={SELECT_CLS + " mb-4"} value={returnCondition} onChange={e => setReturnCondition(e.target.value)}>
+                                        <option value="1 bar">1 bar</option><option value="2 bar">2 bar</option><option value="3 bar">3 bar</option><option value="4 bar">4 bar</option><option value="Full">Full</option>
+                                    </select>
+                                </>) : (<>
+                                    <label className="block text-xs font-bold text-white/70 mb-1">Return Condition</label>
+                                    <select className={SELECT_CLS + " mb-4"} value={returnCondition} onChange={e => setReturnCondition(e.target.value)}>
+                                        <option value="Excellent">Excellent</option><option value="Good">Good</option><option value="Fair">Fair</option><option value="Damaged">Damaged</option>
+                                    </select>
+                                </>)}
                                 <button onClick={markAsReturned} className="w-full bg-blue-500/80 backdrop-blur-sm text-white py-3.5 md:py-4 rounded-xl font-bold hover:bg-blue-500 transition-all border border-blue-400/30">CONFIRM RETURN</button>
                                 <button onClick={() => setReturnConditionModal(null)} className="w-full mt-3 py-2 text-sm text-white/50 font-bold uppercase hover:text-white/80 transition-all">Cancel</button>
+                            </div>
+                        </div>
+                    )}
+
+                    {detailModal && (
+                        <div className="fixed inset-0 z-50">
+                            <div className="absolute inset-0 bg-black/50 backdrop-blur-sm" onClick={() => setDetailModal(null)} />
+                            <div className="absolute bottom-0 left-0 right-0 md:bottom-auto md:top-1/2 md:left-1/2 md:-translate-x-1/2 md:-translate-y-1/2 glass-card bg-white/20 dark:bg-[#1e1e2a]/95 p-6 md:p-8 rounded-t-2xl md:rounded-3xl w-full max-w-md mx-auto border border-white/30 dark:border-[#3a3a4a] max-h-[85vh] overflow-y-auto">
+                                <div className="w-10 h-1 bg-white/30 rounded-full mx-auto mb-4 md:hidden" />
+                                <div className="flex items-center justify-between mb-4">
+                                    <h3 className="text-lg md:text-xl font-black text-white">Request Details</h3>
+                                    <button onClick={() => setDetailModal(null)} className="p-1 rounded-lg hover:bg-white/20 transition-all"><Icon name="X" size={20} className="text-white/60" /></button>
+                                </div>
+                                <div className="space-y-3 text-sm">
+                                    <div className="flex justify-between"><span className="text-white/50">Status</span><span className={`font-bold ${STATUS_COLORS[detailModal.status] || 'text-white/60'}`}>{detailModal.status}</span></div>
+                                    <div className="flex justify-between"><span className="text-white/50">Staff Name</span><span className="text-white font-medium">{detailModal.borrowerName}</span></div>
+                                    <div className="flex justify-between"><span className="text-white/50">Email</span><span className="text-white font-medium">{detailModal.borrowerEmail}</span></div>
+                                    <div className="flex justify-between"><span className="text-white/50">Phone</span><span className="text-white font-medium">{detailModal.borrowerPhone}</span></div>
+                                    <hr className="border-white/10" />
+                                    <div className="flex justify-between"><span className="text-white/50">Equipment</span><span className="text-white font-medium">{getEquipmentLabel(detailModal)}</span></div>
+                                    <div className="flex justify-between"><span className="text-white/50">Purpose</span><span className="text-white font-medium text-right max-w-[60%]">{detailModal.purpose}</span></div>
+                                    <div className="flex justify-between"><span className="text-white/50">Return Date</span><span className="text-white font-medium">{detailModal.returnDate || 'Not set'}</span></div>
+                                    {detailModal.cameraModel === 'Car' && (<>
+                                        <div className="flex justify-between"><span className="text-white/50">Borrow Time</span><span className="text-white font-medium">{detailModal.borrowTime || 'Not set'}</span></div>
+                                        <div className="flex justify-between"><span className="text-white/50">Fuel Level</span><span className="text-white font-medium">{detailModal.fuelLevel || 'Not set'}</span></div>
+                                    </>)}
+                                    {detailModal.cameraModel !== 'Car' && <div className="flex justify-between"><span className="text-white/50">Condition</span><span className="text-white font-medium">{detailModal.initialCondition || 'Not set'}</span></div>}
+                                    {detailModal.status === 'Returned' && (<>
+                                        <hr className="border-white/10" />
+                                        <div className="flex justify-between"><span className="text-white/50">Returned On</span><span className="text-white font-medium">{detailModal.returnedAt || 'N/A'}</span></div>
+                                        <div className="flex justify-between"><span className="text-white/50">Return Condition</span><span className="text-white font-medium">{detailModal.returnCondition || 'N/A'}</span></div>
+                                    </>)}
+                                    <hr className="border-white/10" />
+                                    <div className="flex justify-between"><span className="text-white/50">Requested</span><span className="text-white/70 text-xs">{detailModal.requestedAt || 'N/A'}</span></div>
+                                </div>
+                                <div className="flex gap-2 mt-6" onClick={e => e.stopPropagation()}>
+                                    {detailModal.status === 'Pending Approval' && (<>
+                                        <button onClick={() => { updateStatus(detailModal.id, 'Approved'); setDetailModal(null); }} className="flex-1 bg-emerald-500/80 backdrop-blur-sm text-white py-3 rounded-xl font-bold hover:bg-emerald-500 transition-all border border-emerald-400/30">APPROVE</button>
+                                        <button onClick={() => { updateStatus(detailModal.id, 'Rejected'); setDetailModal(null); }} className="flex-1 bg-red-500/80 backdrop-blur-sm text-white py-3 rounded-xl font-bold hover:bg-red-500 transition-all border border-red-400/30">REJECT</button>
+                                    </>)}
+                                    {detailModal.status === 'Approved' && (<>
+                                        <button onClick={() => { setReturnConditionModal(detailModal); setReturnCondition(detailModal.cameraModel === 'Car' ? detailModal.fuelLevel : 'Excellent'); setDetailModal(null); }} className="flex-1 bg-blue-500/80 backdrop-blur-sm text-white py-3 rounded-xl font-bold hover:bg-blue-500 transition-all border border-blue-400/30">MARK RETURNED</button>
+                                        <button onClick={() => copyDetails(detailModal)} className="flex-1 bg-white/20 backdrop-blur-sm text-white py-3 rounded-xl font-bold hover:bg-white/30 transition-all border border-white/30">COPY INFO</button>
+                                    </>)}
+                                    {detailModal.status === 'Rejected' && <button onClick={() => { updateStatus(detailModal.id, 'Pending Approval'); setDetailModal(null); }} className="w-full bg-white/20 backdrop-blur-sm text-white py-3 rounded-xl font-bold hover:bg-white/30 transition-all border border-white/30">UNDO REJECT</button>}
+                                    {detailModal.status === 'Returned' && <button onClick={() => copyDetails(detailModal)} className="w-full bg-white/20 backdrop-blur-sm text-white py-3 rounded-xl font-bold hover:bg-white/30 transition-all border border-white/30">COPY INFO</button>}
+                                </div>
                             </div>
                         </div>
                     )}
                 </div>
             );
         };
-
         const root = ReactDOM.createRoot(document.getElementById('root'));
         root.render(<App />);
     </script>
