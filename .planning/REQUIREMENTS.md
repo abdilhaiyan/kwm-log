@@ -67,14 +67,14 @@ Which phases cover which requirements. Updated during roadmap creation.
 | REF-03 | Phase 1 | Pending |
 | REF-04 | Phase 1 | Pending |
 | REF-05 | Phase 1 | Pending |
-| PASS-01 | Phase 1 | Pending |
-| PASS-02 | Phase 1 | Pending |
-| PASS-03 | Phase 1 | Pending |
-| PLAT-01 | Phase 1 | Pending |
-| PLAT-02 | Phase 1 | Pending |
-| PLAT-03 | Phase 1 | Pending |
-| APPR-01 | Phase 1 | Pending |
-| APPR-02 | Phase 1 | Pending |
+| PASS-01 | Phase 2 | Pending |
+| PASS-02 | Phase 2 | Pending |
+| PASS-03 | Phase 2 | Pending |
+| PLAT-01 | Phase 3 | Pending |
+| PLAT-02 | Phase 3 | Pending |
+| PLAT-03 | Phase 3 | Pending |
+| APPR-01 | Phase 3 | Pending |
+| APPR-02 | Phase 3 | Pending |
 
 **Coverage:**
 - v1 requirements: 13 total
@@ -83,4 +83,4 @@ Which phases cover which requirements. Updated during roadmap creation.
 
 ---
 *Requirements defined: 2026-09-11*
-*Last updated: 2026-09-11 after initial definition*
+*Last updated: 2026-09-11 after roadmap creation*
