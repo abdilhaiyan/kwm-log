@@ -51,7 +51,7 @@
             appId: "1:393195572454:web:42676f73a430b075157f27"
         };
         const appId = window.__app_id || 'camera-borrow-wiramas';
-        const MANAGER_PASSCODE = "1234";
+        const DEFAULT_PASSCODE = "1234";
         let app, auth, db;
         try { app = firebase.initializeApp(firebaseConfig); auth = firebase.auth(); db = firebase.firestore(); }
         catch (err) { console.error("Firebase init error:", err); }
@@ -86,6 +86,10 @@
             const [returnCondition, setReturnCondition] = useState('Excellent');
             const [detailModal, setDetailModal] = useState(null);
             const [filters, setFilters] = useState({ status: 'All', equipment: 'All', search: '', dateFrom: '', dateTo: '' });
+            const [platNumber, setPlatNumber] = useState('');
+            const [approverName, setApproverName] = useState('');
+            const [newPasscode, setNewPasscode] = useState('');
+            const [currentPasscode, setCurrentPasscode] = useState(DEFAULT_PASSCODE);
 
             const unseenCount = requests.filter(r => !seenRequestIds.has(r.id)).length;
             const borrowerCounts = useMemo(() => requests.reduce((acc, r) => { acc[r.borrowerEmail] = (acc[r.borrowerEmail] || 0) + 1; return acc; }, {}), [requests]);
@@ -139,6 +143,13 @@
             useEffect(() => { if (!user || !db) return; const q = db.collection('artifacts/' + appId + '/public/data/borrowing_requests'); return q.onSnapshot(s => { const docs = s.docs.map(d => ({ id: d.id, ...d.data() })); setRequests(docs.sort((a,b) => b.createdAt - a.createdAt)); setTimeout(() => lucide.createIcons(), 100); }); }, [user]);
             useEffect(() => { localStorage.setItem('kwm_seen_requests', JSON.stringify([...seenRequestIds])); }, [seenRequestIds]);
 
+            useEffect(() => {
+                if (!db) return;
+                db.collection('artifacts/' + appId + '/public/data').doc('app_config').get().then(doc => {
+                    if (doc.exists && doc.data().passcode) setCurrentPasscode(doc.data().passcode);
+                }).catch(() => {});
+            }, []);
+
             const handleNotify = (msg, type = 'success') => { setShowNotification({ msg, type }); setTimeout(() => setShowNotification(null), 4000); };
             const markRequestsAsSeen = () => { const ids = requests.map(r => r.id); setSeenRequestIds(prev => { const u = new Set(prev); ids.forEach(id => u.add(id)); return u; }); };
 
@@ -147,11 +158,12 @@
                 if (!db) { handleNotify("Database not initialized", "error"); return; }
                 setIsSending(true);
                 const finalCamera = formData.cameraModel === 'Other' ? formData.customEquipment : formData.cameraModel;
-                const payload = { ...formData, cameraModel: finalCamera, status: 'Pending Approval', requestedAt: new Date().toLocaleString(), createdAt: Date.now() };
+                const payload = { ...formData, cameraModel: finalCamera, platNumber: formData.cameraModel === 'Car' ? platNumber : '', status: 'Pending Approval', requestedAt: new Date().toLocaleString(), createdAt: Date.now() };
                 try {
                     await db.collection('artifacts/' + appId + '/public/data/borrowing_requests').add(payload);
                     handleNotify("Request Logged Successfully");
                     setFormData({ borrowerName: '', borrowerEmail: '', borrowerPhone: '', cameraModel: 'DJI Osmo Action 6', customEquipment: '', purpose: '', returnDate: '', borrowTime: '', fuelLevel: 'Full', initialCondition: 'Excellent' });
+                    setPlatNumber('');
                 } catch (err) { console.error("Error:", err); handleNotify("Error submitting", "error"); }
                 finally { setIsSending(false); }
             };
@@ -166,9 +178,9 @@
             const copyDetails = (r) => {
                 const equipLabel = getEquipmentLabel(r);
                 let details = `KWM EQUIPMENT REQUEST\nStatus: ${r.status}\n\nStaff: ${r.borrowerName}\nEmail: ${r.borrowerEmail}\nPhone: ${r.borrowerPhone}\nEquipment: ${equipLabel}\nPurpose: ${r.purpose}\nReturn Date: ${r.returnDate || 'Not set'}\n`;
-                if (r.cameraModel === 'Car') { details += `Borrow Time: ${r.borrowTime || 'Not set'}\nFuel Level: ${r.fuelLevel || 'Not set'}\n`; }
+                if (r.cameraModel === 'Car') { details += `Plat Number: ${r.platNumber || 'Not set'}\nBorrow Time: ${r.borrowTime || 'Not set'}\nFuel Level: ${r.fuelLevel || 'Not set'}\n`; }
                 else { details += `Condition: ${r.initialCondition || 'Not set'}\n`; }
-                if (r.status === 'Approved') details += '\nApproved. Please proceed to pickup.';
+                if (r.status === 'Approved') details += `\nApproved by: ${r.approvedBy || 'N/A'} on ${r.approvedAt || 'N/A'}\nPlease proceed to pickup.`;
                 else if (r.status === 'Returned') details += `\nReturned on ${r.returnedAt || 'N/A'}. Condition: ${r.returnCondition || 'N/A'}`;
                 else if (r.status === 'Rejected') details += '\nRequest rejected.';
                 const tryCopy = async () => {
@@ -198,10 +210,10 @@
             };
 
             const exportCSV = (data) => {
-                const rows = [['Date Requested','Staff Name','Email','Phone','Equipment','Purpose','Return Date','Status','Condition/Fuel','Borrow Time']];
+                const rows = [['Date Requested','Requested By','Email','Phone','Equipment','Plat Number','Purpose','Return Date','Status','Condition/Fuel','Borrow Time','Approved By']];
                 data.forEach(r => {
                     const equipLabel = getEquipmentLabel(r);
-                    rows.push([r.requestedAt || '', r.borrowerName, r.borrowerEmail, r.borrowerPhone, equipLabel, r.purpose, r.returnDate || '', r.status, r.cameraModel === 'Car' ? r.fuelLevel : r.initialCondition, r.borrowTime || '']);
+                    rows.push([r.requestedAt || '', r.borrowerName, r.borrowerEmail, r.borrowerPhone, equipLabel, r.platNumber || '', r.purpose, r.returnDate || '', r.status, r.cameraModel === 'Car' ? r.fuelLevel : r.initialCondition, r.borrowTime || '', r.approvedBy || '']);
                 });
                 const csv = rows.map(row => row.map(c => `"${(c||'').toString().replace(/"/g,'""')}"`).join(',')).join('\n');
                 const blob = new Blob([csv], { type: 'text/csv' });
@@ -217,17 +229,21 @@
                 const eq = formData.cameraModel;
                 return (
                     <>
-                        <input required placeholder="Staff Name" className={INPUT_CLS} value={formData.borrowerName} onChange={e => updateForm('borrowerName', e.target.value)} />
+                        <input required placeholder="Requested By" className={INPUT_CLS} value={formData.borrowerName} onChange={e => updateForm('borrowerName', e.target.value)} />
                         <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
-                            <input required type="email" placeholder="Email" inputMode="email" className={INPUT_CLS} value={formData.borrowerEmail} onChange={e => updateForm('borrowerEmail', e.target.value)} />
+                            {formData.cameraModel !== 'Car' && <input required type="email" placeholder="Email" inputMode="email" className={INPUT_CLS} value={formData.borrowerEmail} onChange={e => updateForm('borrowerEmail', e.target.value)} />}
                             <input required type="tel" placeholder="Phone" inputMode="tel" className={INPUT_CLS} value={formData.borrowerPhone} onChange={e => updateForm('borrowerPhone', e.target.value)} />
                         </div>
                         {eq === 'Other' && <input required placeholder="Equipment name (e.g. Tripod, Drone, Laptop)" className={INPUT_CLS} value={formData.customEquipment} onChange={e => updateForm('customEquipment', e.target.value)} />}
                         <select className={SELECT_CLS} value={formData.cameraModel} onChange={e => updateForm('cameraModel', e.target.value)}>
                             <option value="DJI Osmo Action 6">DJI Osmo Action 6</option>
-                            <option value="Car">Car</option>
+                            <option value="Car">Vehicles</option>
                             <option value="Other">Other</option>
                         </select>
+                        {eq === 'Car' && <select className={SELECT_CLS} value={platNumber} onChange={e => setPlatNumber(e.target.value)}>
+                            <option value="">Select vehicle</option>
+                            <option value="WRD 5900">WRD 5900</option>
+                        </select>}
                         <textarea required placeholder="Purpose of use..." className="w-full p-3 md:p-4 bg-white/30 dark:bg-[#252535]/60 backdrop-blur-sm rounded-xl h-20 md:h-28 border border-white/40 dark:border-[#3a3a4a] text-white placeholder-white/60 focus:ring-2 focus:ring-white/50 transition-all resize-none" value={formData.purpose} onChange={e => updateForm('purpose', e.target.value)} />
                         <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
                             <div>
@@ -315,7 +331,7 @@
                                         <select className={SELECT_CLS + " text-sm"} value={filters.equipment} onChange={e => setFilters(p => ({...p, equipment: e.target.value}))}>
                                             <option value="All">All Equipment</option>
                                             <option value="DJI Camera">DJI Camera</option>
-                                            <option value="Car">Car</option>
+                                            <option value="Car">Vehicles</option>
                                             <option value="Other">Other</option>
                                         </select>
                                     </div>
@@ -359,7 +375,7 @@
                                                         {historyCount > 1 && <span className="text-[10px] text-white/50">· {historyCount} requests</span>}
                                                     </div>
                                                     <h3 className="text-base md:text-lg font-bold text-white truncate">{req.borrowerName}</h3>
-                                                    <p className="text-xs text-white/60 truncate">{equipLabel} · {req.borrowerPhone}</p>
+                                                    <p className="text-xs text-white/60 truncate">{equipLabel}{req.platNumber ? ` · ${req.platNumber}` : ''} · {req.borrowerPhone}</p>
                                                     {duration && <p className="text-[10px] text-white/40 mt-0.5">Borrowing for {duration}</p>}
                                                     {req.returnDate && <p className={`text-[10px] mt-0.5 ${daysInfo?.isOverdue ? 'text-amber-400 font-bold' : 'text-white/50'}`}>Return by: {new Date(req.returnDate).toLocaleDateString()} {daysInfo && `· ${daysInfo.text}`}</p>}
                                                     {req.cameraModel === 'Car' && req.fuelLevel && <p className="text-[10px] text-white/40 mt-0.5">Fuel: {req.fuelLevel}</p>}
@@ -368,13 +384,18 @@
                                                 </div>
                                                 <div className="flex md:flex-col gap-2 shrink-0" onClick={e => e.stopPropagation()}>
                                                     {req.status === 'Pending Approval' && (<>
-                                                        <button onClick={() => updateStatus(req.id, 'Approved')} className="flex-1 md:flex-none bg-emerald-500/80 backdrop-blur-sm text-white px-5 py-2.5 rounded-xl text-[11px] md:text-xs font-bold hover:bg-emerald-500 transition-all border border-emerald-400/30">APPROVE</button>
+                                                        <select className={SELECT_CLS + " text-sm"} value={approverName} onChange={e => setApproverName(e.target.value)}>
+                                                            <option value="">Select approver</option>
+                                                            <option value="Shafiq">Shafiq</option>
+                                                        </select>
+                                                        <button onClick={() => updateStatus(req.id, 'Approved', { approvedBy: approverName || 'N/A', approvedAt: new Date().toLocaleString() })} className="flex-1 md:flex-none bg-emerald-500/80 backdrop-blur-sm text-white px-5 py-2.5 rounded-xl text-[11px] md:text-xs font-bold hover:bg-emerald-500 transition-all border border-emerald-400/30">APPROVE</button>
                                                         <button onClick={() => updateStatus(req.id, 'Rejected')} className="flex-1 md:flex-none bg-red-500/80 backdrop-blur-sm text-white px-5 py-2.5 rounded-xl text-[11px] md:text-xs font-bold hover:bg-red-500 transition-all border border-red-400/30">REJECT</button>
                                                     </>)}
                                                     {req.status === 'Approved' && (<>
                                                         {!req.passedAt && <button onClick={() => updateStatus(req.id, 'Approved', { passedAt: new Date().toLocaleString() })} className="flex-1 md:flex-none bg-amber-500/80 backdrop-blur-sm text-white px-5 py-2.5 rounded-xl text-[11px] md:text-xs font-bold hover:bg-amber-500 transition-all border border-amber-400/30">ITEM PASSED</button>}
                                                         <button onClick={() => { setReturnConditionModal(req); setReturnCondition('Excellent'); }} className="flex-1 md:flex-none bg-blue-500/80 backdrop-blur-sm text-white px-5 py-2.5 rounded-xl text-[11px] md:text-xs font-bold hover:bg-blue-500 transition-all border border-blue-400/30">MARK RETURNED</button>
                                                         <button onClick={() => copyDetails(req)} className="flex-1 md:flex-none bg-white/20 backdrop-blur-sm text-white px-5 py-2.5 rounded-xl text-[11px] md:text-xs font-bold hover:bg-white/30 transition-all border border-white/30">COPY INFO</button>
+                                                        {req.approvedBy && <span className="text-[10px] text-emerald-300 mt-0.5 md:mt-0">✓ Approved by {req.approvedBy}</span>}
                                                     </>)}
                                                     {req.status === 'Rejected' && <button onClick={() => updateStatus(req.id, 'Pending Approval')} className="flex-1 md:flex-none bg-white/20 backdrop-blur-sm text-white px-5 py-2.5 rounded-xl text-[11px] md:text-xs font-bold hover:bg-white/30 transition-all border border-white/30">UNDO REJECT</button>}
                                                     {req.status === 'Returned' && <button onClick={() => copyDetails(req)} className="flex-1 md:flex-none bg-white/20 backdrop-blur-sm text-white px-5 py-2.5 rounded-xl text-[11px] md:text-xs font-bold hover:bg-white/30 transition-all border border-white/30">COPY INFO</button>}
@@ -395,8 +416,25 @@
                             <div className="absolute bottom-0 left-0 right-0 md:bottom-auto md:top-1/2 md:left-1/2 md:-translate-x-1/2 md:-translate-y-1/2 glass-card bg-white/20 dark:bg-[#1e1e2a]/90 p-6 md:p-10 rounded-t-2xl md:rounded-3xl w-full max-w-sm mx-auto border border-white/30 dark:border-[#3a3a4a]">
                                 <div className="w-10 h-1 bg-white/30 rounded-full mx-auto mb-4 md:hidden" />
                                 <h3 className="text-lg md:text-xl font-black mb-4 md:mb-6 text-center text-white">Admin Access</h3>
-                                <input type="password" autoFocus className={INPUT_CLS + " text-center text-xl md:text-2xl mb-4 placeholder-white/40"} value={passcodeAttempt} onChange={e => setPasscodeAttempt(e.target.value)} />
-                                <button onClick={() => passcodeAttempt === MANAGER_PASSCODE ? (setIsManagerAuthenticated(true), setShowPasscodeModal(false), setView('manager'), markRequestsAsSeen()) : setPasscodeAttempt("")} className="w-full bg-white/80 dark:bg-white/20 text-slate-900 dark:text-white py-3.5 md:py-4 rounded-xl font-bold hover:bg-white dark:hover:bg-white/30 transition-all border border-white/50 dark:border-[#3a3a4a]">Unlock</button>
+                                <input type="password" autoFocus className={INPUT_CLS + " text-center text-xl md:text-2xl mb-4 placeholder-white/40"} value={passcodeAttempt} onChange={e => setPasscodeAttempt(e.target.value)} onKeyDown={e => { if (e.key === 'Enter') document.querySelector('[data-passcode-unlock]').click(); }} />
+                                <input type="text" placeholder="New passcode (optional)" className={INPUT_CLS + " text-sm mb-4 placeholder-white/40"} value={newPasscode} onChange={e => setNewPasscode(e.target.value)} onKeyDown={e => { if (e.key === 'Enter') document.querySelector('[data-passcode-unlock]').click(); }} />
+                                <button data-passcode-unlock onClick={() => {
+                                    if (passcodeAttempt === currentPasscode) {
+                                        setIsManagerAuthenticated(true);
+                                        setShowPasscodeModal(false);
+                                        setView('manager');
+                                        markRequestsAsSeen();
+                                        if (newPasscode.trim() && db) {
+                                            db.collection('artifacts/' + appId + '/public/data').doc('app_config').set({ passcode: newPasscode.trim() }).then(() => {
+                                                setCurrentPasscode(newPasscode.trim());
+                                                handleNotify("Passcode updated");
+                                            }).catch(() => {});
+                                            setNewPasscode('');
+                                        }
+                                    } else {
+                                        setPasscodeAttempt("");
+                                    }
+                                }} className="w-full bg-white/80 dark:bg-white/20 text-slate-900 dark:text-white py-3.5 md:py-4 rounded-xl font-bold hover:bg-white dark:hover:bg-white/30 transition-all border border-white/50 dark:border-[#3a3a4a]">Unlock</button>
                                 <button onClick={() => setShowPasscodeModal(false)} className="w-full mt-3 py-2 text-sm text-white/50 font-bold uppercase hover:text-white/80 transition-all">Cancel</button>
                             </div>
                         </div>
@@ -442,6 +480,7 @@
                                     <div className="flex justify-between"><span className="text-white/50">Phone</span><span className="text-white font-medium">{detailModal.borrowerPhone}</span></div>
                                     <hr className="border-white/10" />
                                     <div className="flex justify-between"><span className="text-white/50">Equipment</span><span className="text-white font-medium">{getEquipmentLabel(detailModal)}</span></div>
+                                    {detailModal.platNumber && <div className="flex justify-between"><span className="text-white/50">Plat Number</span><span className="text-white font-medium">{detailModal.platNumber}</span></div>}
                                     <div className="flex justify-between"><span className="text-white/50">Purpose</span><span className="text-white font-medium text-right max-w-[60%]">{detailModal.purpose}</span></div>
                                     <div className="flex justify-between"><span className="text-white/50">Return Date</span><span className="text-white font-medium">{detailModal.returnDate || 'Not set'}</span></div>
                                     {detailModal.cameraModel === 'Car' && (<>
@@ -451,6 +490,9 @@
                                     {detailModal.cameraModel !== 'Car' && <div className="flex justify-between"><span className="text-white/50">Condition</span><span className="text-white font-medium">{detailModal.initialCondition || 'Not set'}</span></div>}
                                     {detailModal.passedAt && (<>
                                         <div className="flex justify-between"><span className="text-white/50">Item Passed On</span><span className="text-emerald-300 font-medium">{detailModal.passedAt}</span></div>
+                                    </>)}
+                                    {detailModal.approvedBy && (<>
+                                        <div className="flex justify-between"><span className="text-white/50">Approved By</span><span className="text-emerald-300 font-medium">{detailModal.approvedBy}</span></div>
                                     </>)}
                                     {detailModal.status === 'Returned' && (<>
                                         <hr className="border-white/10" />
@@ -462,7 +504,11 @@
                                 </div>
                                 <div className="flex gap-2 mt-6" onClick={e => e.stopPropagation()}>
                                     {detailModal.status === 'Pending Approval' && (<>
-                                        <button onClick={() => { updateStatus(detailModal.id, 'Approved'); setDetailModal(null); }} className="flex-1 bg-emerald-500/80 backdrop-blur-sm text-white py-3 rounded-xl font-bold hover:bg-emerald-500 transition-all border border-emerald-400/30">APPROVE</button>
+                                        <select className={SELECT_CLS + " text-sm mb-2"} value={approverName} onChange={e => setApproverName(e.target.value)}>
+                                            <option value="">Select approver</option>
+                                            <option value="Shafiq">Shafiq</option>
+                                        </select>
+                                        <button onClick={() => { updateStatus(detailModal.id, 'Approved', { approvedBy: approverName || 'N/A', approvedAt: new Date().toLocaleString() }); setDetailModal(null); }} className="flex-1 bg-emerald-500/80 backdrop-blur-sm text-white py-3 rounded-xl font-bold hover:bg-emerald-500 transition-all border border-emerald-400/30">APPROVE</button>
                                         <button onClick={() => { updateStatus(detailModal.id, 'Rejected'); setDetailModal(null); }} className="flex-1 bg-red-500/80 backdrop-blur-sm text-white py-3 rounded-xl font-bold hover:bg-red-500 transition-all border border-red-400/30">REJECT</button>
                                     </>)}
                                     {detailModal.status === 'Approved' && (<>
