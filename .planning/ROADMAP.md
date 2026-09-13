@@ -25,8 +25,13 @@ This milestone refactors the monolithic single-file React app (one ~532-line `Ap
   3. index.html is organized into the 7 ordered script blocks; utilities and constants live outside the component; the App shell holds only cross-cutting state (requests, auth, dark mode, view)
   4. The app still deploys as a single index.html served via `python -m http.server` — no npm, no build step, no new CDN dependencies
   5. Real-time Firestore sync still updates the request list in place after every extraction step (no duplicate listeners), and Lucide icons render in every view
-**Plans**: TBD
+**Plans**: 3 plans
 **UI hint**: yes
+
+Plans:
+- [ ] 01-01-PLAN.md — Extract Constants + Utilities blocks (tracer: proves multi-block mechanism)
+- [ ] 01-02-PLAN.md — Extract Firebase Service + Shared UI blocks
+- [ ] 01-03-PLAN.md — Extract View Components + App Shell + Render blocks (completes decomposition)
 
 ### Phase 2: Config-Driven Passcode
 **Goal**: Manager unlock works from a passcode constant in the HTML (`DEFAULT_PASSCODE = "1234"`); Firestore is no longer involved in passcode validation or rotation
@@ -62,6 +67,6 @@ Phases execute in numeric order: 1 → 2 → 3
 
 | Phase | Plans Complete | Status | Completed |
 |-------|----------------|--------|-----------|
-| 1. Multi-Block Decomposition | TBD | Not started | - |
+| 1. Multi-Block Decomposition | 0/3 | Planned | - |
 | 2. Config-Driven Passcode | TBD | Not started | - |
 | 3. Configurable Plat & Approver Dropdowns | TBD | Not started | - |
