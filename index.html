@@ -58,10 +58,12 @@
         const DEFAULT_PASSCODE = "1234";
     </script>
     <script type="text/babel">
-        const { useState, useEffect, useMemo } = React;
         let app, auth, db;
         try { app = firebase.initializeApp(firebaseConfig); auth = firebase.auth(); db = firebase.firestore(); }
         catch (err) { console.error("Firebase init error:", err); }
+    </script>
+    <script type="text/babel">
+        const { useState, useEffect, useMemo } = React;
 
         const Icon = ({ name, size = 20, className = "" }) => {
             const LucideIcon = lucide.icons[name];
