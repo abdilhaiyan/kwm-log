@@ -41,6 +41,11 @@
 <body class="bg-glass-light dark:bg-glass-dark">
     <div id="root"></div>
     <script type="text/babel">
+        const STATUS_COLORS = { 'Pending Approval': 'text-amber-300', 'Approved': 'text-emerald-300', 'Rejected': 'text-red-300', 'Returned': 'text-blue-300' };
+        const INPUT_CLS = "w-full p-3 md:p-4 bg-white/30 dark:bg-[#252535]/60 backdrop-blur-sm rounded-xl outline-none border border-white/40 dark:border-[#3a3a4a] text-white placeholder-white/60 focus:ring-2 focus:ring-white/50 transition-all";
+        const SELECT_CLS = "w-full p-3 md:p-4 bg-white/30 dark:bg-[#252535]/60 backdrop-blur-sm rounded-xl border border-white/40 dark:border-[#3a3a4a] text-white focus:ring-2 focus:ring-white/50 transition-all";
+    </script>
+    <script type="text/babel">
         const { useState, useEffect, useMemo } = React;
         const firebaseConfig = {
             apiKey: "AIzaSyCH8tnCz0sgMdElLkza0FuW5aM84GkhgUQ",
@@ -60,10 +65,6 @@
             const LucideIcon = lucide.icons[name];
             return LucideIcon ? <i data-lucide={name.toLowerCase()} className={className} style={{width: size, height: size}}></i> : null;
         };
-
-        const STATUS_COLORS = { 'Pending Approval': 'text-amber-300', 'Approved': 'text-emerald-300', 'Rejected': 'text-red-300', 'Returned': 'text-blue-300' };
-        const INPUT_CLS = "w-full p-3 md:p-4 bg-white/30 dark:bg-[#252535]/60 backdrop-blur-sm rounded-xl outline-none border border-white/40 dark:border-[#3a3a4a] text-white placeholder-white/60 focus:ring-2 focus:ring-white/50 transition-all";
-        const SELECT_CLS = "w-full p-3 md:p-4 bg-white/30 dark:bg-[#252535]/60 backdrop-blur-sm rounded-xl border border-white/40 dark:border-[#3a3a4a] text-white focus:ring-2 focus:ring-white/50 transition-all";
 
         const App = () => {
             const [user, setUser] = useState(null);
