@@ -19,15 +19,15 @@ Quick reload + spot check after each extraction (~30 seconds). Catches issues im
 - `lucide.createIcons()` 100ms timeout: copy-paste exactly, no cleanup
 - All field names, status strings, and payload construction: byte-identical
 
-## Build Order (from ARCHITECTURE.md research)
+## Build Order (adapted to actual code — verified against index.html 2026-09-13)
 
 | Order | Block | Content | Depends On |
 |-------|-------|---------|------------|
-| 1 | Constants | `EQUIPMENT_OPTIONS`, `CONDITION_OPTIONS`, `CAMERA_MODELS`, `darkModeListenerAdded` | CDN globals |
-| 2 | Utilities | `copyDetails()`, `formatDate()`, `truncate()`, `getReturnRequirement()` | Constants |
-| 3 | Firebase Service | `firebaseConfig`, `app`, `auth`, `db`, `signIn()` | — |
-| 4 | Shared UI | `Icon`, `Notification`, `PasscodeModal` | Firebase (db ref for passcode save) |
-| 5 | View Components | `EquipmentForm`, `ManagerView` (incl. inline request cards, modals) | Shared UI, Constants, Utilities |
+| 1 | Constants | `STATUS_COLORS`, `INPUT_CLS`, `SELECT_CLS` | CDN globals |
+| 2 | Config | `firebaseConfig`, `appId`, `DEFAULT_PASSCODE` | — |
+| 3 | Firebase Init | `app`, `auth`, `db` (`initializeApp`/`auth()`/`firestore()`) | Config (firebaseConfig) |
+| 4 | Utilities | `isOverdue`, `getDaysInfo`, `getRequestDuration`, `getEquipmentLabel`, `getEquipmentIcon` | — |
+| 5 | Shared UI | `Icon` | — |
 | 6 | App Shell | `App` component — all state, effects, handlers | Everything above |
 | 7 | Render | `ReactDOM.createRoot(...).render(<App />)` | App Shell |
 
