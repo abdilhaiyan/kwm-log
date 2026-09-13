@@ -81,12 +81,13 @@
         const getEquipmentIcon = (r) => r.cameraModel === 'Car' ? 'Car' : r.cameraModel === 'Other' ? 'Package' : 'Camera';
     </script>
     <script type="text/babel">
-        const { useState, useEffect, useMemo } = React;
-
         const Icon = ({ name, size = 20, className = "" }) => {
             const LucideIcon = lucide.icons[name];
             return LucideIcon ? <i data-lucide={name.toLowerCase()} className={className} style={{width: size, height: size}}></i> : null;
         };
+    </script>
+    <script type="text/babel">
+        const { useState, useEffect, useMemo } = React;
 
         const App = () => {
             const [user, setUser] = useState(null);
