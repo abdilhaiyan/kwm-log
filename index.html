@@ -63,6 +63,24 @@
         catch (err) { console.error("Firebase init error:", err); }
     </script>
     <script type="text/babel">
+        const isOverdue = (r) => { if (r.status !== 'Approved' || !r.returnDate) return false; const t = new Date(); t.setHours(0,0,0,0); return new Date(r.returnDate) < t; };
+        const getDaysInfo = (r) => {
+            if (!r.returnDate) return null;
+            const t = new Date(); t.setHours(0,0,0,0);
+            const rd = new Date(r.returnDate); rd.setHours(0,0,0,0);
+            const d = Math.ceil((rd - t) / 86400000);
+            if (r.status === 'Approved') {
+                if (d < 0) return { text: `${Math.abs(d)} days overdue`, isOverdue: true };
+                if (d === 0) return { text: 'Due today', isOverdue: false };
+                return { text: `${d} days left`, isOverdue: false };
+            }
+            return null;
+        };
+        const getRequestDuration = (r) => { if (!r.returnDate || !r.requestedAt) return null; const d = Math.ceil((new Date(r.returnDate) - new Date(r.requestedAt)) / 86400000); return d > 0 ? `${d} days` : null; };
+        const getEquipmentLabel = (r) => r.cameraModel === 'Other' ? (r.customEquipment || 'Other') : r.cameraModel;
+        const getEquipmentIcon = (r) => r.cameraModel === 'Car' ? 'Car' : r.cameraModel === 'Other' ? 'Package' : 'Camera';
+    </script>
+    <script type="text/babel">
         const { useState, useEffect, useMemo } = React;
 
         const Icon = ({ name, size = 20, className = "" }) => {
@@ -125,23 +143,6 @@
                     return true;
                 });
             }, [requests, filters]);
-
-            const isOverdue = (r) => { if (r.status !== 'Approved' || !r.returnDate) return false; const t = new Date(); t.setHours(0,0,0,0); return new Date(r.returnDate) < t; };
-            const getDaysInfo = (r) => {
-                if (!r.returnDate) return null;
-                const t = new Date(); t.setHours(0,0,0,0);
-                const rd = new Date(r.returnDate); rd.setHours(0,0,0,0);
-                const d = Math.ceil((rd - t) / 86400000);
-                if (r.status === 'Approved') {
-                    if (d < 0) return { text: `${Math.abs(d)} days overdue`, isOverdue: true };
-                    if (d === 0) return { text: 'Due today', isOverdue: false };
-                    return { text: `${d} days left`, isOverdue: false };
-                }
-                return null;
-            };
-            const getRequestDuration = (r) => { if (!r.returnDate || !r.requestedAt) return null; const d = Math.ceil((new Date(r.returnDate) - new Date(r.requestedAt)) / 86400000); return d > 0 ? `${d} days` : null; };
-            const getEquipmentLabel = (r) => r.cameraModel === 'Other' ? (r.customEquipment || 'Other') : r.cameraModel;
-            const getEquipmentIcon = (r) => r.cameraModel === 'Car' ? 'Car' : r.cameraModel === 'Other' ? 'Package' : 'Camera';
 
             useEffect(() => { localStorage.setItem('kwm_dark_mode', isDarkMode); document.documentElement.classList.toggle('dark', isDarkMode); }, [isDarkMode]);
             useEffect(() => { if (!auth) return; const unsub = auth.onAuthStateChanged(u => { if (!u) auth.signInAnonymously(); setUser(u); }); return () => unsub(); }, []);
