@@ -112,8 +112,6 @@
             const [filters, setFilters] = useState({ status: 'All', equipment: 'All', search: '', dateFrom: '', dateTo: '' });
             const [platNumber, setPlatNumber] = useState('');
             const [approverName, setApproverName] = useState('');
-            const [newPasscode, setNewPasscode] = useState('');
-            const [currentPasscode, setCurrentPasscode] = useState(DEFAULT_PASSCODE);
 
             const unseenCount = requests.filter(r => !seenRequestIds.has(r.id)).length;
             const borrowerCounts = useMemo(() => requests.reduce((acc, r) => { acc[r.borrowerEmail] = (acc[r.borrowerEmail] || 0) + 1; return acc; }, {}), [requests]);
@@ -149,13 +147,6 @@
             useEffect(() => { if (!auth) return; const unsub = auth.onAuthStateChanged(u => { if (!u) auth.signInAnonymously(); setUser(u); }); return () => unsub(); }, []);
             useEffect(() => { if (!user || !db) return; const q = db.collection('artifacts/' + appId + '/public/data/borrowing_requests'); return q.onSnapshot(s => { const docs = s.docs.map(d => ({ id: d.id, ...d.data() })); setRequests(docs.sort((a,b) => b.createdAt - a.createdAt)); setTimeout(() => lucide.createIcons(), 100); }); }, [user]);
             useEffect(() => { localStorage.setItem('kwm_seen_requests', JSON.stringify([...seenRequestIds])); }, [seenRequestIds]);
-
-            useEffect(() => {
-                if (!db) return;
-                db.collection('artifacts/' + appId + '/public/data').doc('app_config').get().then(doc => {
-                    if (doc.exists && doc.data().passcode) setCurrentPasscode(doc.data().passcode);
-                }).catch(() => {});
-            }, []);
 
             const handleNotify = (msg, type = 'success') => { setShowNotification({ msg, type }); setTimeout(() => setShowNotification(null), 4000); };
             const markRequestsAsSeen = () => { const ids = requests.map(r => r.id); setSeenRequestIds(prev => { const u = new Set(prev); ids.forEach(id => u.add(id)); return u; }); };
@@ -424,20 +415,12 @@
                                 <div className="w-10 h-1 bg-white/30 rounded-full mx-auto mb-4 md:hidden" />
                                 <h3 className="text-lg md:text-xl font-black mb-4 md:mb-6 text-center text-white">Admin Access</h3>
                                 <input type="password" autoFocus className={INPUT_CLS + " text-center text-xl md:text-2xl mb-4 placeholder-white/40"} value={passcodeAttempt} onChange={e => setPasscodeAttempt(e.target.value)} onKeyDown={e => { if (e.key === 'Enter') document.querySelector('[data-passcode-unlock]').click(); }} />
-                                <input type="text" placeholder="New passcode (optional)" className={INPUT_CLS + " text-sm mb-4 placeholder-white/40"} value={newPasscode} onChange={e => setNewPasscode(e.target.value)} onKeyDown={e => { if (e.key === 'Enter') document.querySelector('[data-passcode-unlock]').click(); }} />
                                 <button data-passcode-unlock onClick={() => {
-                                    if (passcodeAttempt === currentPasscode) {
+                                    if (passcodeAttempt === DEFAULT_PASSCODE) {
                                         setIsManagerAuthenticated(true);
                                         setShowPasscodeModal(false);
                                         setView('manager');
                                         markRequestsAsSeen();
-                                        if (newPasscode.trim() && db) {
-                                            db.collection('artifacts/' + appId + '/public/data').doc('app_config').set({ passcode: newPasscode.trim() }).then(() => {
-                                                setCurrentPasscode(newPasscode.trim());
-                                                handleNotify("Passcode updated");
-                                            }).catch(() => {});
-                                            setNewPasscode('');
-                                        }
                                     } else {
                                         setPasscodeAttempt("");
                                     }
