@@ -41,8 +41,8 @@ After reading every line of the existing code, these are the **natural component
 
 | Unit | Lines | State | Purpose |
 |------|-------|-------|---------|
-| Firebase config & init | 45-57 | — (globals) | `firebaseConfig`, `appId`, `DEFAULT_PASSCODE`, `app/auth/db` globals |
-| Firestore reads/writes | 143, 146-151, 156-174 | — | `onSnapshot` listener, passcode fetch, `submitRequest`, `updateStatus`, `markAsReturned` |
+| Firebase config & init | 45-57 | — (globals) | `firebaseConfig`, `appId`, `DEFAULT_PASSCODE` (sole passcode source — edit to rotate), `app/auth/db` globals |
+| Firestore reads/writes | 143, 146-151, 156-174 | — | `onSnapshot` listener, `submitRequest`, `updateStatus`, `markAsReturned` |
 | CSV export | 212-224 | — | Pure data transform + download |
 | Clipboard copy | 178-210 | — | Pure data transform + clipboard API with 3-tier fallback |
 
@@ -65,7 +65,7 @@ After reading every line of the existing code, these are the **natural component
 | `StatusPills` | 348-354 | `statusCounts` | Color-coded count badges |
 | `RequestCard` | 362-406 | `req`, `isOverdue`, `getDaysInfo`, `getRequestDuration`, `borrowerCounts`, `setDetailModal`, `updateStatus`, `approverName`, `setApproverName`, `copyDetails`, `setReturnConditionModal` | Individual request card with action buttons |
 | `EmptyState` | 356-361 | `requests.length`, `filters` | "No requests" placeholder |
-| `PasscodeModal` | 413-441 | `showPasscodeModal`, `setShowPasscodeModal`, `passcodeAttempt`, `setPasscodeAttempt`, `newPasscode`, `setNewPasscode`, `currentPasscode`, `setIsManagerAuthenticated`, `setView`, `markRequestsAsSeen`, `handleNotify`, `db` | Admin passcode gate with optional rotation |
+| `PasscodeModal` | 413-441 | `showPasscodeModal`, `setShowPasscodeModal`, `passcodeAttempt`, `setPasscodeAttempt`, `setIsManagerAuthenticated`, `setView`, `markRequestsAsSeen`, `handleNotify` | Admin gate — validation compares against the `DEFAULT_PASSCODE` constant; no rotation control |
 | `ReturnConditionModal` | 443-465 | `returnConditionModal`, `setReturnConditionModal`, `returnCondition`, `setReturnCondition`, `markAsReturned`, `getEquipmentLabel` | Mark equipment as returned with condition |
 | `DetailModal` | 467-524 | `detailModal`, `setDetailModal`, `setReturnConditionModal`, `setReturnCondition`, `getEquipmentLabel`, `updateStatus`, `copyDetails`, `approverName`, `setApproverName`, `handleNotify` | Full request detail view with inline actions |
 | `NotificationToast` | 411 | `showNotification` | Bottom toast notification |
@@ -106,8 +106,6 @@ Split the single `<script type="text/babel">` into **ordered inline blocks**. Ea
 │      subscribeRequests(onUpdate) → returns unsubscribe        │
 │      submitRequest(payload)                                   │
 │      updateRequestStatus(id, status, extra)                   │
-│      fetchPasscode()                                          │
-│      updatePasscode(newPasscode)                              │
 ├──────────────────────────────────────────────────────────────┤
 │  <script type="text/babel">                                  │
 │    Block 4: SHARED UI COMPONENTS                              │
@@ -218,7 +216,7 @@ components/request-form.js          ← Borrow form with conditional fields
 components/dashboard.js             ← FilterBar + RequestCard list + EmptyState
 components/filter-bar.js            ← Status/equipment/search/date filters
 components/request-card.js          ← Individual request card with actions
-components/passcode-modal.js        ← Admin gate + passcode rotation
+components/passcode-modal.js        ← Admin gate (constant passcode)
 components/return-modal.js          ← Mark returned with condition
 components/detail-modal.js          ← Full detail view with inline actions
 components/notification.js          ← Toast notification
@@ -228,8 +226,6 @@ services/firebase.js                ← Firebase CRUD wrapper (uses window.fireb
   export function subscribeRequests(onUpdate)
   export async function submitRequest(payload)
   export async function updateRequestStatus(id, status, extra)
-  export async function fetchPasscode()
-  export async function updatePasscode(new)
 
 utils/helpers.js                    ← Date/label/clipboard utilities
   export function isOverdue(r)
@@ -266,7 +262,7 @@ Firebase Firestore (cloud)
 App component (single)
     ├── useState: requests, filters, view, modals, form, auth state
     ├── useMemo: filteredRequests, statusCounts, borrowerCounts
-    ├── useEffect: Firestore subscription, dark mode, passcode fetch
+    ├── useEffect: Firestore subscription, dark mode
     ├── submitRequest → Firestore.add
     ├── updateStatus → Firestore.update
     └── render: form | dashboard (filter → card list → modals)
@@ -280,9 +276,7 @@ Firebase Firestore (cloud)
 Block 3: FirebaseService
     ├── subscribeRequests(callback) → sets requests[]
     ├── submitRequest(payload)
-    ├── updateRequestStatus(id, status, extra)
-    └── fetchPasscode() / updatePasscode()
-         ↓ (calls back to App component)
+    └── updateRequestStatus(id, status, extra)
 Block 7: App Shell
     ├── useState: requests ← from subscribeRequests
     ├── useState: filters, view, modals, form, auth
@@ -324,7 +318,6 @@ No Context needed. No Redux. No external state library. For this app (~200 lines
 | `returnConditionModal` | App Shell | ReturnConditionModal | Selected request for return |
 | `showNotification` | App Shell | NotificationToast | Toast message + type |
 | `isDarkMode` | App Shell | Header (reads+writes) | Persisted in localStorage |
-| `currentPasscode` | App Shell | PasscodeModal (reads) | From Firestore |
 
 ## Anti-Patterns to Avoid
 
@@ -375,7 +368,7 @@ No Context needed. No Redux. No external state library. For this app (~200 lines
 
 | Boundary | Communication | Notes |
 |----------|---------------|-------|
-| Block 1 (Config) → Block 3 (Firebase Service) | Shared globals: `db`, `appId`, `DEFAULT_PASSCODE` | FirebaseService reads from global config |
+| Block 1 (Config) → Block 3 (Firebase Service) | Shared globals: `db`, `appId`, `DEFAULT_PASSCODE` | FirebaseService reads `db`/`appId` from global config; `DEFAULT_PASSCODE` is read directly by the App Shell |
 | Block 3 (Firebase Service) → Block 7 (App Shell) | `subscribeRequests(callback)` pattern | Real-time subscription via callback, not return |
 | Block 7 (App Shell) → Block 6 (View Components) | Props: data in, callbacks out | Standard React one-way data flow |
 | Block 7 (App Shell) → Block 5 (Modals) | Props: show state + data + onConfirm | Modals are controlled components |
@@ -411,8 +404,7 @@ Step 2: Block 2 — Utilities (depends on Block 1: no actual deps, but logically
          copyToClipboard, exportCSV, handleNotify
          ↓
 Step 3: Block 3 — Firebase Service (depends on Block 1: db, appId)
-         Extract subscribeRequests, submitRequest, updateStatus,
-         fetchPasscode, updatePasscode
+         Extract subscribeRequests, submitRequest, updateStatus
          Expose as window.DB or plain global functions
          ↓
 Step 4: Block 4 — Shared UI (depends on Block 2: none; Block 1: STATUS_COLORS)
