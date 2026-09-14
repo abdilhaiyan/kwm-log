@@ -71,12 +71,13 @@ Plans:
   3. Both option lists are defined as constants at the top of index.html — adding a new plate or approver is a one-line constant edit with no JSX or logic changes
   4. Plat number and approver still display correctly in the request cards, detail modal, copied details, and CSV export
 
-**Plans**: 1 plan
-**UI hint**: yes
+**Plans**: 1/1 plans executed
 
 Plans:
 
-- [ ] 03-01-PLAN.md — Config constants + config-driven plat & approver selects with "Other" free-text reveal
+- [x] 03-01-PLAN.md — Config constants + config-driven plat & approver selects with "Other" free-text reveal
+
+**UI hint**: yes
 
 ## Progress
 
@@ -87,4 +88,4 @@ Phases execute in numeric order: 1 → 2 → 3
 |-------|----------------|--------|-----------|
 | 1. Multi-Block Decomposition | 0/3 | Planned | - |
 | 2. Config-Driven Passcode | 2/2 | Complete    | 2026-09-14 |
-| 3. Configurable Plat & Approver Dropdowns | 0/1 | Planned | - |
+| 3. Configurable Plat & Approver Dropdowns | 1/1 | Executed (UAT pending) | - |

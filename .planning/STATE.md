@@ -4,16 +4,16 @@ milestone: v1.0
 milestone_name: milestone
 current_phase: 3
 current_phase_name: Configurable Plat & Approver Dropdowns
-status: planning
-stopped_at: Completed 03-CONTEXT.md (Phase 3 discussion)
-last_updated: "2026-09-14T06:10:00.000Z"
+status: executing
+stopped_at: Phase 3 plan 03-01 executed (awaiting end-of-phase UAT)
+last_updated: "2026-09-14T14:30:00.000Z"
 last_activity: 2026-09-14
-last_activity_desc: Phase 3 context gathered, ready to plan
+last_activity_desc: Phase 3 plan 03-01 executed — config-driven plat & approver dropdowns
 progress:
-  total_phases: 2
+  total_phases: 3
   completed_phases: 2
-  total_plans: 5
-  completed_plans: 5
+  total_plans: 6
+  completed_plans: 6
 ---
 
 # Project State
@@ -23,14 +23,14 @@ progress:
 See: .planning/PROJECT.md (updated 2026-09-11)
 
 **Core value:** Accountable equipment handover — track who borrowed what, when, and whether it was returned, with an approval trail (approver name, passed status).
-**Current focus:** Phase 02 — Config-Driven Passcode
+**Current focus:** Phase 3 — Configurable Plat & Approver Dropdowns
 
 ## Current Position
 
-Phase: 3 — Configurable Plat & Approver Dropdowns
-Plan: Not started
-Status: Ready to plan
-Last activity: 2026-09-14 — Phase 3 context gathered (03-CONTEXT.md)
+Phase: 3 (Configurable Plat & Approver Dropdowns) — EXECUTING (awaiting UAT)
+Plan: 1 of 1 (03-01 executed, committed 2242f0b + 95a3cc1)
+Status: Plan 03-01 complete — end-of-phase browser UAT pending
+Last activity: 2026-09-14 — Phase 3 plan 03-01 executed
 
 Progress: [██████████] 100%
 
@@ -38,7 +38,7 @@ Progress: [██████████] 100%
 
 **Velocity:**
 
-- Total plans completed: 5
+- Total plans completed: 6
 - Average duration: —
 - Total execution time: —
 
@@ -47,9 +47,8 @@ Progress: [██████████] 100%
 | Phase | Plans | Total | Avg/Plan |
 |-------|-------|-------|----------|
 | 1. Multi-Block Decomposition | 3 | — | — |
-| 2. Config-Driven Passcode | TBD | — | — |
-| 3. Configurable Plat & Approver | TBD | — | — |
-| 02 | 2 | - | - |
+| 2. Config-Driven Passcode | 2 | — | — |
+| 3. Configurable Plat & Approver | 1 | — | — |
 
 *Updated after each plan completion*
 **Per-Plan Metrics:**
@@ -58,6 +57,7 @@ Progress: [██████████] 100%
 |------|----------|-------|-------|
 | Phase 02 P01 | 12min | 2 tasks | 1 files |
 | Phase 02-config-driven-passcode P02 | 6min | 3 tasks | 3 files |
+| Phase 03 P01 | 25min | 2 tasks | 1 files |
 
 ## Accumulated Context
 
@@ -69,6 +69,7 @@ Full log in PROJECT.md Key Decisions. Recent decisions affecting current work:
 - [Phase 1]: Prop drilling, NOT React Context — 14 useState is below the Context threshold at this scale
 - [Phase 2]: Passcode validated against HTML constant; Firestore `app_config` reads/writes removed — rotation via constant edit
 - [Phase 3]: Plat + Approver option lists as editable constants at top of file
+- [Phase 3]: `PLAT_OPTIONS = ['WRD 5900', 'Other']` + `APPROVER_OPTIONS = ['Shafiq', 'Other']` in Block 2 beside `DEFAULT_PASSCODE`; "Other" last reveals required free-text input (equipment pattern); typed value recorded via `finalPlat`/`finalApprover` ternaries; `|| 'N/A'` fallback preserved; `approverName` stays single shared state between card and modal selects
 - [Phase ?]: Passcode validated against HTML constant; Firestore app_config read/write removed; rotation via constant edit (D-01 comment)
 - [Phase ?]: Firestore app_config doc left untouched as dead data (D-02)
 - [Phase ?]: D-03 implemented: PROJECT.md, FEATURES.md, ARCHITECTURE.md refreshed to describe the constant-based passcode (DEFAULT_PASSCODE, edit to rotate) with zero Firestore passcode-flow claims
