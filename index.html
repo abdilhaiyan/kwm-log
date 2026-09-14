@@ -44,6 +44,8 @@
         const STATUS_COLORS = { 'Pending Approval': 'text-amber-300', 'Approved': 'text-emerald-300', 'Rejected': 'text-red-300', 'Returned': 'text-blue-300' };
         const INPUT_CLS = "w-full p-3 md:p-4 bg-white/30 dark:bg-[#252535]/60 backdrop-blur-sm rounded-xl outline-none border border-white/40 dark:border-[#3a3a4a] text-white placeholder-white/60 focus:ring-2 focus:ring-white/50 transition-all";
         const SELECT_CLS = "w-full p-3 md:p-4 bg-white/30 dark:bg-[#252535]/60 backdrop-blur-sm rounded-xl border border-white/40 dark:border-[#3a3a4a] text-white focus:ring-2 focus:ring-white/50 transition-all";
+        const SELECT_CLS_SM = "w-full p-2 md:p-4 bg-white/30 dark:bg-[#252535]/60 backdrop-blur-sm rounded-xl border border-white/40 dark:border-[#3a3a4a] text-white text-sm focus:ring-2 focus:ring-white/50 transition-all";
+        const INPUT_CLS_SM = "w-full p-2 md:p-4 bg-white/30 dark:bg-[#252535]/60 backdrop-blur-sm rounded-xl outline-none border border-white/40 dark:border-[#3a3a4a] text-white placeholder-white/60 text-sm focus:ring-2 focus:ring-white/50 transition-all";
     </script>
     <script type="text/babel">
         const firebaseConfig = {
@@ -57,10 +59,10 @@
         const appId = window.__app_id || 'camera-borrow-wiramas';
         // Manager passcode — edit to rotate
         const DEFAULT_PASSCODE = "1234";
-        // Vehicle plates — edit to add options
-        const PLAT_OPTIONS = ['WRD 5900', 'Other'];
-        // Approvers — edit to add options
-        const APPROVER_OPTIONS = ['Shafiq', 'Other'];
+        // Default dropdown lists — customized in Settings (stored in Firestore)
+        const DEFAULT_PLAT_OPTIONS = ['WRD 5900', 'Other'];
+        const DEFAULT_APPROVER_OPTIONS = ['Shafiq', 'Other'];
+        const DEFAULT_EQUIPMENT_OPTIONS = ['DJI Osmo Action 6', 'Car', 'Other'];
     </script>
     <script type="text/babel">
         let app, auth, db;
@@ -84,6 +86,7 @@
         const getRequestDuration = (r) => { if (!r.returnDate || !r.requestedAt) return null; const d = Math.ceil((new Date(r.returnDate) - new Date(r.requestedAt)) / 86400000); return d > 0 ? `${d} days` : null; };
         const getEquipmentLabel = (r) => r.cameraModel === 'Other' ? (r.customEquipment || 'Other') : r.cameraModel;
         const getEquipmentIcon = (r) => r.cameraModel === 'Car' ? 'Car' : r.cameraModel === 'Other' ? 'Package' : 'Camera';
+        const getEquipDisplay = (o) => o === 'Car' ? 'Vehicles' : o;
     </script>
     <script type="text/babel">
         const Icon = ({ name, size = 20, className = "" }) => {
@@ -93,6 +96,38 @@
     </script>
     <script type="text/babel">
         const { useState, useEffect, useMemo } = React;
+
+        const ListEditor = ({ title, listKey, items, newVal, setNewVal, editing, setEditing, onAdd, onEdit, onRemove, onRequestDelete, placeholder }) => {
+            const isEditing = editing && editing.list === listKey;
+            return (
+                <div className="glass-card bg-white/20 dark:bg-[#1e1e2a]/80 p-4 md:p-6 rounded-2xl md:rounded-3xl border border-white/30 dark:border-[#3a3a4a]">
+                    <h3 className="text-sm md:text-base font-black text-white mb-3">{title}</h3>
+                    <div className="space-y-2 mb-3">
+                        {items.map((o, i) => (
+                            <div key={i} className="flex items-center gap-2">
+                                {isEditing && editing.idx === i ? (
+                                    <>
+                                        <input autoFocus className={INPUT_CLS_SM + " flex-1"} value={editing.val} onChange={e => setEditing({ ...editing, val: e.target.value })} onKeyDown={e => { if (e.key === 'Enter') onEdit(i, editing.val); }} />
+                                        <button onClick={() => onEdit(i, editing.val)} title="Save" className="p-2 rounded-lg bg-emerald-500/20 text-emerald-300 hover:bg-emerald-500/30 transition-all border border-emerald-400/30"><Icon name="Check" size={14} /></button>
+                                        <button onClick={() => setEditing(null)} title="Cancel" className="p-2 rounded-lg bg-orange-500/20 text-orange-300 hover:bg-orange-500/30 transition-all border border-orange-400/30"><Icon name="X" size={14} /></button>
+                                    </>
+                                ) : (
+                                    <>
+                                        <span className="flex-1 text-sm text-white/80 truncate">{getEquipDisplay(o)}</span>
+                                        <button onClick={() => setEditing({ list: listKey, idx: i, val: o })} disabled={o === 'Other'} title={o === 'Other' ? 'Cannot edit Other' : 'Edit'} className={`p-2 rounded-lg transition-all border ${o === 'Other' ? 'bg-white/5 text-white/20 border-white/10 cursor-not-allowed' : 'bg-blue-500/20 text-blue-300 hover:bg-blue-500/30 border-blue-400/30'}`}><Icon name="Pencil" size={14} /></button>
+                                        <button onClick={() => onRequestDelete(i, o)} disabled={o === 'Other'} title={o === 'Other' ? 'Cannot delete Other' : 'Delete'} className={`p-2 rounded-lg transition-all border ${o === 'Other' ? 'bg-white/5 text-white/20 border-white/10 cursor-not-allowed' : 'bg-red-500/20 text-red-300 hover:bg-red-500/30 border-red-400/30'}`}><Icon name="Trash2" size={14} /></button>
+                                    </>
+                                )}
+                            </div>
+                        ))}
+                    </div>
+                    <div className="flex gap-2">
+                        <input placeholder={placeholder} className={INPUT_CLS_SM + " flex-1"} value={newVal} onChange={e => setNewVal(e.target.value)} onKeyDown={e => { if (e.key === 'Enter') onAdd(newVal); }} />
+                        <button onClick={() => onAdd(newVal)} className="px-4 py-2 rounded-xl bg-white/20 text-white text-xs font-bold hover:bg-white/30 transition-all border border-white/30">ADD</button>
+                    </div>
+                </div>
+            );
+        };
 
         const App = () => {
             const [user, setUser] = useState(null);
@@ -119,6 +154,18 @@
             const [approverName, setApproverName] = useState('');
             const [customPlat, setCustomPlat] = useState('');
             const [customApprover, setCustomApprover] = useState('');
+            const [platOptions, setPlatOptions] = useState(DEFAULT_PLAT_OPTIONS);
+            const [approverOptions, setApproverOptions] = useState(DEFAULT_APPROVER_OPTIONS);
+            const [equipmentOptions, setEquipmentOptions] = useState(DEFAULT_EQUIPMENT_OPTIONS);
+            const [pendingView, setPendingView] = useState('manager');
+            const [deleteModal, setDeleteModal] = useState(null);
+            const [deletePasscode, setDeletePasscode] = useState('');
+            const [newItem, setNewItem] = useState({ equipment: '', plat: '', approver: '' });
+            const [editingList, setEditingList] = useState(null);
+            const [appPasscode, setAppPasscode] = useState(DEFAULT_PASSCODE);
+            const [passcodeForm, setPasscodeForm] = useState({ current: '', next: '', confirm: '' });
+            const [listDeleteModal, setListDeleteModal] = useState(null);
+            const [listDeletePasscode, setListDeletePasscode] = useState('');
 
             const unseenCount = requests.filter(r => !seenRequestIds.has(r.id)).length;
             const borrowerCounts = useMemo(() => requests.reduce((acc, r) => { acc[r.borrowerEmail] = (acc[r.borrowerEmail] || 0) + 1; return acc; }, {}), [requests]);
@@ -139,11 +186,15 @@
                 return requests.filter(r => {
                     if (filters.status !== 'All' && r.status !== filters.status) return false;
                     if (filters.equipment !== 'All') {
-                        if (filters.equipment === 'Car' && r.cameraModel !== 'Car') return false;
-                        if (filters.equipment === 'DJI Camera' && r.cameraModel !== 'DJI Osmo Action 6') return false;
-                        if (filters.equipment === 'Other' && r.cameraModel !== 'Other') return false;
+                        if (filters.equipment === 'Other') {
+                            if (r.cameraModel === 'Car' || r.cameraModel === 'DJI Osmo Action 6') return false;
+                        } else if (r.cameraModel !== filters.equipment) return false;
                     }
-                    if (filters.search && !r.borrowerName.toLowerCase().includes(filters.search.toLowerCase())) return false;
+                    if (filters.search) {
+                        const q = filters.search.toLowerCase();
+                        const haystack = [r.borrowerName, r.customEquipment, r.platNumber, r.borrowerPhone, r.borrowerEmail, r.cameraModel].filter(Boolean).join(' ').toLowerCase();
+                        if (!haystack.includes(q)) return false;
+                    }
                     if (filters.dateFrom && r.returnDate && r.returnDate < filters.dateFrom) return false;
                     if (filters.dateTo && r.returnDate && r.returnDate > filters.dateTo) return false;
                     return true;
@@ -153,6 +204,7 @@
             useEffect(() => { localStorage.setItem('kwm_dark_mode', isDarkMode); document.documentElement.classList.toggle('dark', isDarkMode); }, [isDarkMode]);
             useEffect(() => { if (!auth) return; const unsub = auth.onAuthStateChanged(u => { if (!u) auth.signInAnonymously(); setUser(u); }); return () => unsub(); }, []);
             useEffect(() => { if (!user || !db) return; const q = db.collection('artifacts/' + appId + '/public/data/borrowing_requests'); return q.onSnapshot(s => { const docs = s.docs.map(d => ({ id: d.id, ...d.data() })); setRequests(docs.sort((a,b) => b.createdAt - a.createdAt)); setTimeout(() => lucide.createIcons(), 100); }); }, [user]);
+            useEffect(() => { if (!user || !db) return; const ref = db.collection('artifacts/' + appId + '/public/data/options').doc('lists'); return ref.onSnapshot(doc => { if (doc.exists) { const d = doc.data(); setPlatOptions(d.platOptions || DEFAULT_PLAT_OPTIONS); setApproverOptions(d.approverOptions || DEFAULT_APPROVER_OPTIONS); setEquipmentOptions(d.equipmentOptions || DEFAULT_EQUIPMENT_OPTIONS); if (d.passcode) setAppPasscode(d.passcode); } }, err => console.error("Options load error:", err)); }, [user]);
             useEffect(() => { localStorage.setItem('kwm_seen_requests', JSON.stringify([...seenRequestIds])); }, [seenRequestIds]);
 
             const handleNotify = (msg, type = 'success') => { setShowNotification({ msg, type }); setTimeout(() => setShowNotification(null), 4000); };
@@ -180,15 +232,67 @@
                 catch (err) { console.error("Error:", err); handleNotify("Error updating", "error"); }
             };
 
+            const saveOptions = async (plat, approver, equip) => {
+                if (!db) return;
+                try { await db.collection('artifacts/' + appId + '/public/data/options').doc('lists').set({ platOptions: plat, approverOptions: approver, equipmentOptions: equip }, { merge: true }); }
+                catch (err) { console.error("Options save error:", err); handleNotify("Error saving lists", "error"); }
+            };
+            const addOption = (list, value) => {
+                const v = (value || '').trim(); if (!v) return;
+                const next = { equipment: equipmentOptions, plat: platOptions, approver: approverOptions };
+                if (next[list].includes(v)) { handleNotify("Already in list", "error"); return; }
+                next[list] = [...next[list], v];
+                saveOptions(next.plat, next.approver, next.equipment);
+                setNewItem(p => ({ ...p, [list]: '' }));
+            };
+            const editOption = (list, idx, value) => {
+                const v = (value || '').trim(); if (!v) return;
+                const next = { equipment: equipmentOptions, plat: platOptions, approver: approverOptions };
+                next[list] = next[list].map((o, i) => i === idx ? v : o);
+                saveOptions(next.plat, next.approver, next.equipment);
+                setEditingList(null);
+            };
+            const removeOption = (list, idx) => {
+                const next = { equipment: equipmentOptions, plat: platOptions, approver: approverOptions };
+                if (next[list][idx] === 'Other') return;
+                next[list] = next[list].filter((_, i) => i !== idx);
+                saveOptions(next.plat, next.approver, next.equipment);
+            };
+            const confirmDelete = async () => {
+                if (!deleteModal) return;
+                if (deletePasscode !== appPasscode) { setDeletePasscode(''); handleNotify("Wrong passcode", "error"); return; }
+                try { await db.collection('artifacts/' + appId + '/public/data/borrowing_requests').doc(deleteModal.id).delete(); handleNotify("Request deleted"); setDeleteModal(null); setDeletePasscode(''); }
+                catch (err) { console.error("Delete error:", err); handleNotify("Error deleting", "error"); }
+            };
+            const savePasscode = async () => {
+                if (!db) return;
+                if (passcodeForm.current !== appPasscode) { handleNotify("Current passcode is wrong", "error"); return; }
+                if (!passcodeForm.next || passcodeForm.next.length < 4) { handleNotify("New passcode must be at least 4 characters", "error"); return; }
+                if (passcodeForm.next !== passcodeForm.confirm) { handleNotify("New passcode does not match", "error"); return; }
+                try {
+                    await db.collection('artifacts/' + appId + '/public/data/options').doc('lists').set({ passcode: passcodeForm.next }, { merge: true });
+                    setAppPasscode(passcodeForm.next);
+                    setPasscodeForm({ current: '', next: '', confirm: '' });
+                    handleNotify("Passcode updated");
+                } catch (err) { console.error("Passcode save error:", err); handleNotify("Error saving passcode", "error"); }
+            };
+            const confirmListDelete = () => {
+                if (!listDeleteModal) return;
+                if (listDeletePasscode !== appPasscode) { setListDeletePasscode(''); handleNotify("Wrong passcode", "error"); return; }
+                removeOption(listDeleteModal.list, listDeleteModal.idx);
+                setListDeleteModal(null);
+                setListDeletePasscode('');
+            };
+
             const markAsReturned = async () => { if (!returnConditionModal) return; await updateStatus(returnConditionModal.id, 'Returned', { returnedAt: new Date().toLocaleString(), returnCondition }); setReturnConditionModal(null); setReturnCondition('Excellent'); };
 
             const copyDetails = (r) => {
                 const equipLabel = getEquipmentLabel(r);
                 let details = `KWM EQUIPMENT REQUEST\nStatus: ${r.status}\n\nStaff: ${r.borrowerName}\nEmail: ${r.borrowerEmail}\nPhone: ${r.borrowerPhone}\nEquipment: ${equipLabel}\nPurpose: ${r.purpose}\nReturn Date: ${r.returnDate || 'Not set'}\n`;
-                if (r.cameraModel === 'Car') { details += `Plat Number: ${r.platNumber || 'Not set'}\nBorrow Time: ${r.borrowTime || 'Not set'}\nFuel Level: ${r.fuelLevel || 'Not set'}\n`; }
+                if (r.cameraModel === 'Car') { details += `Plat Number: ${r.platNumber || 'Not set'}\nBorrow Time: ${r.borrowTime || 'Not set'}\nFuel Level (borrow): ${r.fuelLevel || 'Not set'}\n`; if (r.status === 'Returned') details += `Fuel Level (return): ${r.returnCondition || 'Not set'}\n`; }
                 else { details += `Condition: ${r.initialCondition || 'Not set'}\n`; }
                 if (r.status === 'Approved') details += `\nApproved by: ${r.approvedBy || 'N/A'} on ${r.approvedAt || 'N/A'}\nPlease proceed to pickup.`;
-                else if (r.status === 'Returned') details += `\nReturned on ${r.returnedAt || 'N/A'}. Condition: ${r.returnCondition || 'N/A'}`;
+                else if (r.status === 'Returned') details += `\nReturned on ${r.returnedAt || 'N/A'}.${r.cameraModel === 'Car' ? '' : ` Condition: ${r.returnCondition || 'N/A'}`}`;
                 else if (r.status === 'Rejected') details += '\nRequest rejected.';
                 const tryCopy = async () => {
                     try {
@@ -237,21 +341,19 @@
                 return (
                     <>
                         <input required placeholder="Requested By" className={INPUT_CLS} value={formData.borrowerName} onChange={e => updateForm('borrowerName', e.target.value)} />
+                        {eq === 'Other' && <input required placeholder="Equipment name (e.g. Tripod, Drone, Laptop)" className={INPUT_CLS} value={formData.customEquipment} onChange={e => updateForm('customEquipment', e.target.value)} />}
+                        <select className={SELECT_CLS} value={formData.cameraModel} onChange={e => updateForm('cameraModel', e.target.value)}>
+                            {equipmentOptions.map(o => <option key={o} value={o}>{getEquipDisplay(o)}</option>)}
+                        </select>
+                        {eq === 'Car' && <select className={SELECT_CLS} value={platNumber} onChange={e => setPlatNumber(e.target.value)}>
+                            <option value="">Select vehicle</option>
+                            {platOptions.map(o => <option key={o} value={o}>{o}</option>)}
+                        </select>}
+                        {eq === 'Car' && platNumber === 'Other' && <input required placeholder="Vehicle plate (e.g. WRD 1234)" className={INPUT_CLS} value={customPlat} onChange={e => setCustomPlat(e.target.value)} />}
                         <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
                             {formData.cameraModel !== 'Car' && <input required type="email" placeholder="Email" inputMode="email" className={INPUT_CLS} value={formData.borrowerEmail} onChange={e => updateForm('borrowerEmail', e.target.value)} />}
                             <input required type="tel" placeholder="Phone" inputMode="tel" className={INPUT_CLS} value={formData.borrowerPhone} onChange={e => updateForm('borrowerPhone', e.target.value)} />
                         </div>
-                        {eq === 'Other' && <input required placeholder="Equipment name (e.g. Tripod, Drone, Laptop)" className={INPUT_CLS} value={formData.customEquipment} onChange={e => updateForm('customEquipment', e.target.value)} />}
-                        <select className={SELECT_CLS} value={formData.cameraModel} onChange={e => updateForm('cameraModel', e.target.value)}>
-                            <option value="DJI Osmo Action 6">DJI Osmo Action 6</option>
-                            <option value="Car">Vehicles</option>
-                            <option value="Other">Other</option>
-                        </select>
-                        {eq === 'Car' && <select className={SELECT_CLS} value={platNumber} onChange={e => setPlatNumber(e.target.value)}>
-                            <option value="">Select vehicle</option>
-                            {PLAT_OPTIONS.map(o => <option key={o} value={o}>{o}</option>)}
-                        </select>}
-                        {eq === 'Car' && platNumber === 'Other' && <input required placeholder="Vehicle plate (e.g. WRD 1234)" className={INPUT_CLS} value={customPlat} onChange={e => setCustomPlat(e.target.value)} />}
                         <textarea required placeholder="Purpose of use..." className="w-full p-3 md:p-4 bg-white/30 dark:bg-[#252535]/60 backdrop-blur-sm rounded-xl h-20 md:h-28 border border-white/40 dark:border-[#3a3a4a] text-white placeholder-white/60 focus:ring-2 focus:ring-white/50 transition-all resize-none" value={formData.purpose} onChange={e => updateForm('purpose', e.target.value)} />
                         <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
                             <div>
@@ -305,10 +407,11 @@
                             <div className="flex items-center gap-2 w-full md:w-auto">
                                 <nav className="flex-1 md:flex-none flex bg-white/20 dark:bg-[#2a2a3a]/70 backdrop-blur-xl p-1 rounded-2xl border border-white/30 dark:border-[#3a3a4a]">
                                     <button onClick={() => setView('request')} className={`flex-1 md:flex-none px-4 md:px-6 py-2.5 rounded-xl text-[11px] md:text-xs font-bold transition-all ${view === 'request' ? 'bg-white/80 dark:bg-white/20 text-slate-900 dark:text-white' : 'text-white/60 hover:text-white/80'}`}>Form</button>
-                                    <button onClick={() => { if (isManagerAuthenticated) { setView('manager'); markRequestsAsSeen(); } else { setShowPasscodeModal(true); } }} className={`relative flex-1 md:flex-none px-4 md:px-6 py-2.5 rounded-xl text-[11px] md:text-xs font-bold transition-all ${view === 'manager' ? 'bg-white/80 dark:bg-white/20 text-slate-900 dark:text-white' : 'text-white/60 hover:text-white/80'}`}>
+                                    <button onClick={() => { if (isManagerAuthenticated) { setView('manager'); markRequestsAsSeen(); } else { setPendingView('manager'); setShowPasscodeModal(true); } }} className={`relative flex-1 md:flex-none px-4 md:px-6 py-2.5 rounded-xl text-[11px] md:text-xs font-bold transition-all ${view === 'manager' ? 'bg-white/80 dark:bg-white/20 text-slate-900 dark:text-white' : 'text-white/60 hover:text-white/80'}`}>
                                         Manager
                                         {unseenCount > 0 && <span className="absolute -top-1.5 -right-1.5 bg-red-500 text-white text-[9px] font-bold rounded-full min-w-[18px] h-[18px] flex items-center justify-center px-1">{unseenCount > 99 ? '99+' : unseenCount}</span>}
                                     </button>
+                                    {isManagerAuthenticated && <button onClick={() => setView('settings')} className={`flex-1 md:flex-none px-4 md:px-6 py-2.5 rounded-xl text-[11px] md:text-xs font-bold transition-all ${view === 'settings' ? 'bg-white/80 dark:bg-white/20 text-slate-900 dark:text-white' : 'text-white/60 hover:text-white/80'}`}>Settings</button>}
                                 </nav>
                                 <button onClick={() => setIsDarkMode(!isDarkMode)} className="p-2.5 rounded-xl bg-white/20 dark:bg-[#2a2a3a]/70 backdrop-blur-sm border border-white/30 dark:border-[#3a3a4a] text-white hover:bg-white/30 transition-all">
                                     {isDarkMode ? <Icon name="Sun" size={18} /> : <Icon name="Moon" size={18} />}
@@ -322,6 +425,32 @@
                             <div className="glass-card bg-white/20 dark:bg-[#1e1e2a]/80 p-4 md:p-8 lg:p-10 rounded-2xl md:rounded-3xl shadow-xl border border-white/30 dark:border-[#3a3a4a]">
                                 <h2 className="text-xl md:text-3xl font-black mb-4 md:mb-6 text-white">Company Asset Request Form</h2>
                                 <form onSubmit={submitRequest} className="space-y-3 md:space-y-4">{renderFormFields()}</form>
+                            </div>
+                        ) : view === 'settings' ? (
+                            <div className="space-y-3 md:space-y-4">
+                                <div className="glass-card bg-white/20 dark:bg-[#1e1e2a]/80 p-4 md:p-6 rounded-2xl md:rounded-3xl border border-white/30 dark:border-[#3a3a4a]">
+                                    <h2 className="text-lg md:text-xl font-black text-white mb-1">Settings</h2>
+                                    <p className="text-xs text-white/60">Customize the dropdown lists. Changes sync instantly to the form, manager view, and search menu on all devices.</p>
+                                    <div className="flex flex-wrap gap-4 mt-3 text-[10px] text-white/50">
+                                        <div className="flex flex-col items-center gap-1"><span>Edit</span><div className="w-3 h-3 rounded-full bg-blue-500/20 border border-blue-400/40"></div></div>
+                                        <div className="flex flex-col items-center gap-1"><span>Delete</span><div className="w-3 h-3 rounded-full bg-red-500/20 border border-red-400/40"></div></div>
+                                        <div className="flex flex-col items-center gap-1"><span>Save</span><div className="w-3 h-3 rounded-full bg-emerald-500/20 border border-emerald-400/40"></div></div>
+                                        <div className="flex flex-col items-center gap-1"><span>Cancel</span><div className="w-3 h-3 rounded-full bg-orange-500/20 border border-orange-400/40"></div></div>
+                                        <div className="flex flex-col items-center gap-1"><span className="font-bold">ADD</span><span className="text-[9px] text-white/40">Add new</span></div>
+                                    </div>
+                                </div>
+                                <ListEditor title="Equipment List" listKey="equipment" items={equipmentOptions} newVal={newItem.equipment} setNewVal={v => setNewItem(p => ({ ...p, equipment: v }))} editing={editingList} setEditing={setEditingList} onAdd={v => addOption('equipment', v)} onEdit={(i, v) => editOption('equipment', i, v)} onRemove={i => removeOption('equipment', i)} onRequestDelete={(i, o) => setListDeleteModal({ list: 'equipment', idx: i, value: o, title: 'Equipment List' })} placeholder="Add equipment (e.g. Tripod)" />
+                                <ListEditor title="Vehicle Plates List" listKey="plat" items={platOptions} newVal={newItem.plat} setNewVal={v => setNewItem(p => ({ ...p, plat: v }))} editing={editingList} setEditing={setEditingList} onAdd={v => addOption('plat', v)} onEdit={(i, v) => editOption('plat', i, v)} onRemove={i => removeOption('plat', i)} onRequestDelete={(i, o) => setListDeleteModal({ list: 'plat', idx: i, value: o, title: 'Vehicle Plates List' })} placeholder="Add vehicle plate (e.g. WRD 1234)" />
+                                <ListEditor title="Approvers List" listKey="approver" items={approverOptions} newVal={newItem.approver} setNewVal={v => setNewItem(p => ({ ...p, approver: v }))} editing={editingList} setEditing={setEditingList} onAdd={v => addOption('approver', v)} onEdit={(i, v) => editOption('approver', i, v)} onRemove={i => removeOption('approver', i)} onRequestDelete={(i, o) => setListDeleteModal({ list: 'approver', idx: i, value: o, title: 'Approvers List' })} placeholder="Add approver name (e.g. Ahmad)" />
+                                <div className="glass-card bg-white/20 dark:bg-[#1e1e2a]/80 p-4 md:p-6 rounded-2xl md:rounded-3xl border border-white/30 dark:border-[#3a3a4a] border-l-4 border-l-purple-400/60">
+                                    <h3 className="text-sm md:text-base font-black text-white mb-3">Change Passcode</h3>
+                                    <div className="space-y-2 mb-3">
+                                        <input type="password" placeholder="Current passcode" className={INPUT_CLS_SM + " w-full"} value={passcodeForm.current} onChange={e => setPasscodeForm(p => ({ ...p, current: e.target.value }))} />
+                                        <input type="password" placeholder="New passcode (min 4 chars)" className={INPUT_CLS_SM + " w-full"} value={passcodeForm.next} onChange={e => setPasscodeForm(p => ({ ...p, next: e.target.value }))} />
+                                        <input type="password" placeholder="Confirm new passcode" className={INPUT_CLS_SM + " w-full"} value={passcodeForm.confirm} onChange={e => setPasscodeForm(p => ({ ...p, confirm: e.target.value }))} />
+                                    </div>
+                                    <button onClick={savePasscode} className="w-full px-4 py-2.5 rounded-xl bg-purple-500/20 text-purple-300 text-xs font-bold hover:bg-purple-500/30 transition-all border border-purple-400/30">SAVE PASSCODE</button>
+                                </div>
                             </div>
                         ) : (
                             <div className="space-y-3 md:space-y-4">
@@ -338,9 +467,7 @@
                                         </select>
                                         <select className={SELECT_CLS + " text-sm"} value={filters.equipment} onChange={e => setFilters(p => ({...p, equipment: e.target.value}))}>
                                             <option value="All">All Equipment</option>
-                                            <option value="DJI Camera">DJI Camera</option>
-                                            <option value="Car">Vehicles</option>
-                                            <option value="Other">Other</option>
+                                            {equipmentOptions.map(o => <option key={o} value={o}>{getEquipDisplay(o)}</option>)}
                                         </select>
                                     </div>
                                     <div className="flex flex-wrap items-center gap-2">
@@ -386,28 +513,29 @@
                                                     <p className="text-xs text-white/60 truncate">{equipLabel}{req.platNumber ? ` · ${req.platNumber}` : ''} · {req.borrowerPhone}</p>
                                                     {duration && <p className="text-[10px] text-white/40 mt-0.5">Borrowing for {duration}</p>}
                                                     {req.returnDate && <p className={`text-[10px] mt-0.5 ${daysInfo?.isOverdue ? 'text-amber-400 font-bold' : 'text-white/50'}`}>Return by: {new Date(req.returnDate).toLocaleDateString()} {daysInfo && `· ${daysInfo.text}`}</p>}
-                                                    {req.cameraModel === 'Car' && req.fuelLevel && <p className="text-[10px] text-white/40 mt-0.5">Fuel: {req.fuelLevel}</p>}
+                                                    {req.cameraModel === 'Car' && req.fuelLevel && <p className="text-[10px] text-white/40 mt-0.5">{req.status === 'Returned' ? `Borrow fuel: ${req.fuelLevel}` : `Fuel: ${req.fuelLevel}`}</p>}
                                                     {req.passedAt && <p className="text-[10px] text-emerald-300 mt-0.5">✓ Passed on {req.passedAt}</p>}
-                                                    {req.status === 'Returned' && req.returnCondition && <p className="text-[10px] text-blue-300 mt-0.5">Returned: {req.returnCondition}</p>}
+                                                    {req.status === 'Returned' && req.returnCondition && <p className="text-[10px] text-blue-300 mt-0.5">{req.cameraModel === 'Car' ? `Returned fuel: ${req.returnCondition}` : `Returned: ${req.returnCondition}`}</p>}
                                                 </div>
-                                                <div className="flex md:flex-col gap-2 shrink-0" onClick={e => e.stopPropagation()}>
+                                                <div className="flex flex-col md:flex-col gap-2 shrink-0 w-full md:w-auto" onClick={e => e.stopPropagation()}>
                                                     {req.status === 'Pending Approval' && (<>
-                                                        <select className={SELECT_CLS + " text-sm"} value={approverName} onChange={e => setApproverName(e.target.value)}>
+                                                        <select className={SELECT_CLS_SM} value={approverName} onChange={e => setApproverName(e.target.value)}>
                                                             <option value="">Select approver</option>
-                                                            {APPROVER_OPTIONS.map(o => <option key={o} value={o}>{o}</option>)}
+                                                            {approverOptions.map(o => <option key={o} value={o}>{o}</option>)}
                                                         </select>
-                                                        {approverName === 'Other' && <input required placeholder="Approver name (e.g. Ahmad)" className={INPUT_CLS + " text-sm"} value={customApprover} onChange={e => setCustomApprover(e.target.value)} />}
-                                                        <button onClick={() => { const finalApprover = approverName === 'Other' ? customApprover : approverName; updateStatus(req.id, 'Approved', { approvedBy: finalApprover || 'N/A', approvedAt: new Date().toLocaleString() }); }} className="flex-1 md:flex-none bg-emerald-500/80 backdrop-blur-sm text-white px-5 py-2.5 rounded-xl text-[11px] md:text-xs font-bold hover:bg-emerald-500 transition-all border border-emerald-400/30">APPROVE</button>
-                                                        <button onClick={() => updateStatus(req.id, 'Rejected')} className="flex-1 md:flex-none bg-red-500/80 backdrop-blur-sm text-white px-5 py-2.5 rounded-xl text-[11px] md:text-xs font-bold hover:bg-red-500 transition-all border border-red-400/30">REJECT</button>
+                                                        {approverName === 'Other' && <input required placeholder="Approver name (e.g. Ahmad)" className={INPUT_CLS_SM} value={customApprover} onChange={e => setCustomApprover(e.target.value)} />}
+                                                        <button onClick={() => { const finalApprover = approverName === 'Other' ? customApprover : approverName; updateStatus(req.id, 'Approved', { approvedBy: finalApprover || 'N/A', approvedAt: new Date().toLocaleString() }); }} className="w-full md:w-auto bg-emerald-500/80 backdrop-blur-sm text-white px-5 py-2.5 rounded-xl text-[11px] md:text-xs font-bold hover:bg-emerald-500 transition-all border border-emerald-400/30">APPROVE</button>
+                                                        <button onClick={() => updateStatus(req.id, 'Rejected')} className="w-full md:w-auto bg-red-500/80 backdrop-blur-sm text-white px-5 py-2.5 rounded-xl text-[11px] md:text-xs font-bold hover:bg-red-500 transition-all border border-red-400/30">REJECT</button>
                                                     </>)}
                                                     {req.status === 'Approved' && (<>
-                                                        {!req.passedAt && <button onClick={() => updateStatus(req.id, 'Approved', { passedAt: new Date().toLocaleString() })} className="flex-1 md:flex-none bg-amber-500/80 backdrop-blur-sm text-white px-5 py-2.5 rounded-xl text-[11px] md:text-xs font-bold hover:bg-amber-500 transition-all border border-amber-400/30">ITEM PASSED</button>}
-                                                        <button onClick={() => { setReturnConditionModal(req); setReturnCondition('Excellent'); }} className="flex-1 md:flex-none bg-blue-500/80 backdrop-blur-sm text-white px-5 py-2.5 rounded-xl text-[11px] md:text-xs font-bold hover:bg-blue-500 transition-all border border-blue-400/30">MARK RETURNED</button>
-                                                        <button onClick={() => copyDetails(req)} className="flex-1 md:flex-none bg-white/20 backdrop-blur-sm text-white px-5 py-2.5 rounded-xl text-[11px] md:text-xs font-bold hover:bg-white/30 transition-all border border-white/30">COPY INFO</button>
+                                                        {!req.passedAt && <button onClick={() => updateStatus(req.id, 'Approved', { passedAt: new Date().toLocaleString() })} className="w-full md:w-auto bg-amber-500/20 backdrop-blur-sm text-amber-300 px-5 py-2.5 rounded-xl text-[11px] md:text-xs font-bold hover:bg-amber-500/30 transition-all border border-amber-400/30">ITEM PASSED</button>}
+                                                        <button onClick={() => { setReturnConditionModal(req); setReturnCondition(req.cameraModel === 'Car' ? req.fuelLevel : 'Excellent'); }} className="w-full md:w-auto bg-blue-500/20 backdrop-blur-sm text-blue-300 px-5 py-2.5 rounded-xl text-[11px] md:text-xs font-bold hover:bg-blue-500/30 transition-all border border-blue-400/30">MARK RETURNED</button>
+                                                        <button onClick={() => copyDetails(req)} className="w-full md:w-auto bg-white/20 backdrop-blur-sm text-white px-5 py-2.5 rounded-xl text-[11px] md:text-xs font-bold hover:bg-white/30 transition-all border border-white/30">COPY INFO</button>
                                                         {req.approvedBy && <span className="text-[10px] text-emerald-300 mt-0.5 md:mt-0">✓ Approved by {req.approvedBy}</span>}
                                                     </>)}
-                                                    {req.status === 'Rejected' && <button onClick={() => updateStatus(req.id, 'Pending Approval')} className="flex-1 md:flex-none bg-white/20 backdrop-blur-sm text-white px-5 py-2.5 rounded-xl text-[11px] md:text-xs font-bold hover:bg-white/30 transition-all border border-white/30">UNDO REJECT</button>}
-                                                    {req.status === 'Returned' && <button onClick={() => copyDetails(req)} className="flex-1 md:flex-none bg-white/20 backdrop-blur-sm text-white px-5 py-2.5 rounded-xl text-[11px] md:text-xs font-bold hover:bg-white/30 transition-all border border-white/30">COPY INFO</button>}
+                                                    {req.status === 'Rejected' && <button onClick={() => updateStatus(req.id, 'Pending Approval')} className="w-full md:w-auto bg-white/20 backdrop-blur-sm text-white px-5 py-2.5 rounded-xl text-[11px] md:text-xs font-bold hover:bg-white/30 transition-all border border-white/30">UNDO REJECT</button>}
+                                                    {req.status === 'Returned' && <button onClick={() => copyDetails(req)} className="w-full md:w-auto bg-white/20 backdrop-blur-sm text-white px-5 py-2.5 rounded-xl text-[11px] md:text-xs font-bold hover:bg-white/30 transition-all border border-white/30">COPY INFO</button>}
+                                                    <button onClick={() => setDeleteModal(req)} title="Delete request" className="w-full md:w-auto bg-red-500/20 backdrop-blur-sm text-red-300 px-5 py-2.5 rounded-xl text-[11px] md:text-xs font-bold hover:bg-red-500/30 transition-all border border-red-400/30">DELETE</button>
                                                 </div>
                                             </div>
                                         </div>
@@ -427,16 +555,44 @@
                                 <h3 className="text-lg md:text-xl font-black mb-4 md:mb-6 text-center text-white">Admin Access</h3>
                                 <input type="password" autoFocus className={INPUT_CLS + " text-center text-xl md:text-2xl mb-4 placeholder-white/40"} value={passcodeAttempt} onChange={e => setPasscodeAttempt(e.target.value)} onKeyDown={e => { if (e.key === 'Enter') document.querySelector('[data-passcode-unlock]').click(); }} />
                                 <button data-passcode-unlock onClick={() => {
-                                    if (passcodeAttempt === DEFAULT_PASSCODE) {
+                                    if (passcodeAttempt === appPasscode) {
                                         setIsManagerAuthenticated(true);
                                         setShowPasscodeModal(false);
-                                        setView('manager');
-                                        markRequestsAsSeen();
+                                        setView(pendingView);
+                                        if (pendingView === 'manager') markRequestsAsSeen();
                                     } else {
                                         setPasscodeAttempt("");
                                     }
                                 }} className="w-full bg-white/80 dark:bg-white/20 text-slate-900 dark:text-white py-3.5 md:py-4 rounded-xl font-bold hover:bg-white dark:hover:bg-white/30 transition-all border border-white/50 dark:border-[#3a3a4a]">Unlock</button>
                                 <button onClick={() => setShowPasscodeModal(false)} className="w-full mt-3 py-2 text-sm text-white/50 font-bold uppercase hover:text-white/80 transition-all">Cancel</button>
+                            </div>
+                        </div>
+                    )}
+
+                    {deleteModal && (
+                        <div className="fixed inset-0 z-50">
+                            <div className="absolute inset-0 bg-black/50 backdrop-blur-sm" onClick={() => setDeleteModal(null)} />
+                            <div className="absolute bottom-0 left-0 right-0 md:bottom-auto md:top-1/2 md:left-1/2 md:-translate-x-1/2 md:-translate-y-1/2 glass-card bg-white/20 dark:bg-[#1e1e2a]/90 p-6 md:p-8 rounded-t-2xl md:rounded-3xl w-full max-w-sm mx-auto border border-white/30 dark:border-[#3a3a4a]">
+                                <div className="w-10 h-1 bg-white/30 rounded-full mx-auto mb-4 md:hidden" />
+                                <h3 className="text-lg md:text-xl font-black mb-2 text-center text-white">Delete Request</h3>
+                                <p className="text-xs text-white/60 text-center mb-4">Delete {deleteModal.borrowerName}'s request? This cannot be undone.</p>
+                                <input type="password" autoFocus className={INPUT_CLS + " text-center text-xl md:text-2xl mb-4 placeholder-white/40"} placeholder="Manager passcode" value={deletePasscode} onChange={e => setDeletePasscode(e.target.value)} onKeyDown={e => { if (e.key === 'Enter') confirmDelete(); }} />
+                                <button onClick={confirmDelete} className="w-full bg-red-500/80 backdrop-blur-sm text-white py-3.5 md:py-4 rounded-xl font-bold hover:bg-red-500 transition-all border border-red-400/30">CONFIRM DELETE</button>
+                                <button onClick={() => { setDeleteModal(null); setDeletePasscode(''); }} className="w-full mt-3 py-2 text-sm text-white/50 font-bold uppercase hover:text-white/80 transition-all">Cancel</button>
+                            </div>
+                        </div>
+                    )}
+
+                    {listDeleteModal && (
+                        <div className="fixed inset-0 z-50">
+                            <div className="absolute inset-0 bg-black/50 backdrop-blur-sm" onClick={() => setListDeleteModal(null)} />
+                            <div className="absolute bottom-0 left-0 right-0 md:bottom-auto md:top-1/2 md:left-1/2 md:-translate-x-1/2 md:-translate-y-1/2 glass-card bg-white/20 dark:bg-[#1e1e2a]/90 p-6 md:p-8 rounded-t-2xl md:rounded-3xl w-full max-w-sm mx-auto border border-white/30 dark:border-[#3a3a4a]">
+                                <div className="w-10 h-1 bg-white/30 rounded-full mx-auto mb-4 md:hidden" />
+                                <h3 className="text-lg md:text-xl font-black mb-2 text-center text-white">Delete List Item</h3>
+                                <p className="text-xs text-white/60 text-center mb-4">Delete "{listDeleteModal.value}" from {listDeleteModal.title}? This cannot be undone.</p>
+                                <input type="password" autoFocus className={INPUT_CLS + " text-center text-xl md:text-2xl mb-4 placeholder-white/40"} placeholder="Manager passcode" value={listDeletePasscode} onChange={e => setListDeletePasscode(e.target.value)} onKeyDown={e => { if (e.key === 'Enter') confirmListDelete(); }} />
+                                <button onClick={confirmListDelete} className="w-full bg-red-500/80 backdrop-blur-sm text-white py-3.5 md:py-4 rounded-xl font-bold hover:bg-red-500 transition-all border border-red-400/30">CONFIRM DELETE</button>
+                                <button onClick={() => { setListDeleteModal(null); setListDeletePasscode(''); }} className="w-full mt-3 py-2 text-sm text-white/50 font-bold uppercase hover:text-white/80 transition-all">Cancel</button>
                             </div>
                         </div>
                     )}
@@ -486,7 +642,8 @@
                                     <div className="flex justify-between"><span className="text-white/50">Return Date</span><span className="text-white font-medium">{detailModal.returnDate || 'Not set'}</span></div>
                                     {detailModal.cameraModel === 'Car' && (<>
                                         <div className="flex justify-between"><span className="text-white/50">Borrow Time</span><span className="text-white font-medium">{detailModal.borrowTime || 'Not set'}</span></div>
-                                        <div className="flex justify-between"><span className="text-white/50">Fuel Level</span><span className="text-white font-medium">{detailModal.fuelLevel || 'Not set'}</span></div>
+                                        <div className="flex justify-between"><span className="text-white/50">Fuel Level (borrow)</span><span className="text-white font-medium">{detailModal.fuelLevel || 'Not set'}</span></div>
+                                        {detailModal.status === 'Returned' && <div className="flex justify-between"><span className="text-white/50">Fuel Level (return)</span><span className="text-white font-medium">{detailModal.returnCondition || 'Not set'}</span></div>}
                                     </>)}
                                     {detailModal.cameraModel !== 'Car' && <div className="flex justify-between"><span className="text-white/50">Condition</span><span className="text-white font-medium">{detailModal.initialCondition || 'Not set'}</span></div>}
                                     {detailModal.passedAt && (<>
@@ -498,28 +655,29 @@
                                     {detailModal.status === 'Returned' && (<>
                                         <hr className="border-white/10" />
                                         <div className="flex justify-between"><span className="text-white/50">Returned On</span><span className="text-white font-medium">{detailModal.returnedAt || 'N/A'}</span></div>
-                                        <div className="flex justify-between"><span className="text-white/50">Return Condition</span><span className="text-white font-medium">{detailModal.returnCondition || 'N/A'}</span></div>
+                                        {detailModal.cameraModel !== 'Car' && <div className="flex justify-between"><span className="text-white/50">Return Condition</span><span className="text-white font-medium">{detailModal.returnCondition || 'N/A'}</span></div>}
                                     </>)}
                                     <hr className="border-white/10" />
                                     <div className="flex justify-between"><span className="text-white/50">Requested</span><span className="text-white/70 text-xs">{detailModal.requestedAt || 'N/A'}</span></div>
                                 </div>
-                                <div className="flex gap-2 mt-6" onClick={e => e.stopPropagation()}>
+                                <div className="flex flex-col md:flex-row gap-2 mt-6" onClick={e => e.stopPropagation()}>
                                     {detailModal.status === 'Pending Approval' && (<>
-                                        <select className={SELECT_CLS + " text-sm mb-2"} value={approverName} onChange={e => setApproverName(e.target.value)}>
+                                        <select className={SELECT_CLS_SM} value={approverName} onChange={e => setApproverName(e.target.value)}>
                                             <option value="">Select approver</option>
-                                            {APPROVER_OPTIONS.map(o => <option key={o} value={o}>{o}</option>)}
+                                            {approverOptions.map(o => <option key={o} value={o}>{o}</option>)}
                                         </select>
-                                        {approverName === 'Other' && <input required placeholder="Approver name (e.g. Ahmad)" className={INPUT_CLS + " text-sm mb-2"} value={customApprover} onChange={e => setCustomApprover(e.target.value)} />}
-                                        <button onClick={() => { const finalApprover = approverName === 'Other' ? customApprover : approverName; updateStatus(detailModal.id, 'Approved', { approvedBy: finalApprover || 'N/A', approvedAt: new Date().toLocaleString() }); setDetailModal(null); }} className="flex-1 bg-emerald-500/80 backdrop-blur-sm text-white py-3 rounded-xl font-bold hover:bg-emerald-500 transition-all border border-emerald-400/30">APPROVE</button>
-                                        <button onClick={() => { updateStatus(detailModal.id, 'Rejected'); setDetailModal(null); }} className="flex-1 bg-red-500/80 backdrop-blur-sm text-white py-3 rounded-xl font-bold hover:bg-red-500 transition-all border border-red-400/30">REJECT</button>
+                                        {approverName === 'Other' && <input required placeholder="Approver name (e.g. Ahmad)" className={INPUT_CLS_SM} value={customApprover} onChange={e => setCustomApprover(e.target.value)} />}
+                                        <button onClick={() => { const finalApprover = approverName === 'Other' ? customApprover : approverName; updateStatus(detailModal.id, 'Approved', { approvedBy: finalApprover || 'N/A', approvedAt: new Date().toLocaleString() }); setDetailModal(null); }} className="w-full md:flex-1 bg-emerald-500/80 backdrop-blur-sm text-white py-3 rounded-xl font-bold hover:bg-emerald-500 transition-all border border-emerald-400/30">APPROVE</button>
+                                        <button onClick={() => { updateStatus(detailModal.id, 'Rejected'); setDetailModal(null); }} className="w-full md:flex-1 bg-red-500/80 backdrop-blur-sm text-white py-3 rounded-xl font-bold hover:bg-red-500 transition-all border border-red-400/30">REJECT</button>
                                     </>)}
                                     {detailModal.status === 'Approved' && (<>
-                                        {!detailModal.passedAt && <button onClick={() => { updateStatus(detailModal.id, 'Approved', { passedAt: new Date().toLocaleString() }); setDetailModal({...detailModal, passedAt: new Date().toLocaleString()}); }} className="flex-1 bg-amber-500/80 backdrop-blur-sm text-white py-3 rounded-xl font-bold hover:bg-amber-500 transition-all border border-amber-400/30">ITEM PASSED</button>}
-                                        <button onClick={() => { setReturnConditionModal(detailModal); setReturnCondition(detailModal.cameraModel === 'Car' ? detailModal.fuelLevel : 'Excellent'); setDetailModal(null); }} className="flex-1 bg-blue-500/80 backdrop-blur-sm text-white py-3 rounded-xl font-bold hover:bg-blue-500 transition-all border border-blue-400/30">MARK RETURNED</button>
-                                        <button onClick={() => copyDetails(detailModal)} className="flex-1 bg-white/20 backdrop-blur-sm text-white py-3 rounded-xl font-bold hover:bg-white/30 transition-all border border-white/30">COPY INFO</button>
+                                        {!detailModal.passedAt && <button onClick={() => { updateStatus(detailModal.id, 'Approved', { passedAt: new Date().toLocaleString() }); setDetailModal({...detailModal, passedAt: new Date().toLocaleString()}); }} className="w-full md:flex-1 bg-amber-500/20 backdrop-blur-sm text-amber-300 py-3 rounded-xl font-bold hover:bg-amber-500/30 transition-all border border-amber-400/30">ITEM PASSED</button>}
+                                        <button onClick={() => { setReturnConditionModal(detailModal); setReturnCondition(detailModal.cameraModel === 'Car' ? detailModal.fuelLevel : 'Excellent'); setDetailModal(null); }} className="w-full md:flex-1 bg-blue-500/20 backdrop-blur-sm text-blue-300 py-3 rounded-xl font-bold hover:bg-blue-500/30 transition-all border border-blue-400/30">MARK RETURNED</button>
+                                        <button onClick={() => copyDetails(detailModal)} className="w-full md:flex-1 bg-white/20 backdrop-blur-sm text-white py-3 rounded-xl font-bold hover:bg-white/30 transition-all border border-white/30">COPY INFO</button>
                                     </>)}
                                     {detailModal.status === 'Rejected' && <button onClick={() => { updateStatus(detailModal.id, 'Pending Approval'); setDetailModal(null); }} className="w-full bg-white/20 backdrop-blur-sm text-white py-3 rounded-xl font-bold hover:bg-white/30 transition-all border border-white/30">UNDO REJECT</button>}
                                     {detailModal.status === 'Returned' && <button onClick={() => copyDetails(detailModal)} className="w-full bg-white/20 backdrop-blur-sm text-white py-3 rounded-xl font-bold hover:bg-white/30 transition-all border border-white/30">COPY INFO</button>}
+                                    <button onClick={() => setDeleteModal(detailModal)} title="Delete request" className="w-full md:w-auto md:px-4 bg-red-500/20 backdrop-blur-sm text-red-300 py-3 rounded-xl font-bold hover:bg-red-500/30 transition-all border border-red-400/30">DELETE</button>
                                 </div>
                             </div>
                         </div>
