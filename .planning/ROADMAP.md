@@ -51,10 +51,10 @@ Plans:
   4. The change-passcode control is removed; rotating the passcode now means editing the `DEFAULT_PASSCODE` constant at the top of index.html
   5. The passcode modal looks and behaves identically (input, Unlock button, Enter submit, error state)
 
-**Plans**: 1/2 plans executed
+**Plans**: 2/2 plans executed
 
 - [x] 02-01-PLAN.md
-- [ ] 02-02-PLAN.md
+- [x] 02-02-PLAN.md
 
 **UI hint**: yes
 
@@ -82,5 +82,5 @@ Phases execute in numeric order: 1 → 2 → 3
 | Phase | Plans Complete | Status | Completed |
 |-------|----------------|--------|-----------|
 | 1. Multi-Block Decomposition | 0/3 | Planned | - |
-| 2. Config-Driven Passcode | 1/2 | In Progress|  |
+| 2. Config-Driven Passcode | 2/2 | In Progress|  |
 | 3. Configurable Plat & Approver Dropdowns | TBD | Not started | - |
