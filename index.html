@@ -57,6 +57,10 @@
         const appId = window.__app_id || 'camera-borrow-wiramas';
         // Manager passcode — edit to rotate
         const DEFAULT_PASSCODE = "1234";
+        // Vehicle plates — edit to add options
+        const PLAT_OPTIONS = ['WRD 5900', 'Other'];
+        // Approvers — edit to add options
+        const APPROVER_OPTIONS = ['Shafiq', 'Other'];
     </script>
     <script type="text/babel">
         let app, auth, db;
@@ -113,6 +117,7 @@
             const [filters, setFilters] = useState({ status: 'All', equipment: 'All', search: '', dateFrom: '', dateTo: '' });
             const [platNumber, setPlatNumber] = useState('');
             const [approverName, setApproverName] = useState('');
+            const [customPlat, setCustomPlat] = useState('');
 
             const unseenCount = requests.filter(r => !seenRequestIds.has(r.id)).length;
             const borrowerCounts = useMemo(() => requests.reduce((acc, r) => { acc[r.borrowerEmail] = (acc[r.borrowerEmail] || 0) + 1; return acc; }, {}), [requests]);
@@ -157,12 +162,14 @@
                 if (!db) { handleNotify("Database not initialized", "error"); return; }
                 setIsSending(true);
                 const finalCamera = formData.cameraModel === 'Other' ? formData.customEquipment : formData.cameraModel;
-                const payload = { ...formData, cameraModel: finalCamera, platNumber: formData.cameraModel === 'Car' ? platNumber : '', status: 'Pending Approval', requestedAt: new Date().toLocaleString(), createdAt: Date.now() };
+                const finalPlat = platNumber === 'Other' ? customPlat : platNumber;
+                const payload = { ...formData, cameraModel: finalCamera, platNumber: formData.cameraModel === 'Car' ? finalPlat : '', status: 'Pending Approval', requestedAt: new Date().toLocaleString(), createdAt: Date.now() };
                 try {
                     await db.collection('artifacts/' + appId + '/public/data/borrowing_requests').add(payload);
                     handleNotify("Request Logged Successfully");
                     setFormData({ borrowerName: '', borrowerEmail: '', borrowerPhone: '', cameraModel: 'DJI Osmo Action 6', customEquipment: '', purpose: '', returnDate: '', borrowTime: '', fuelLevel: 'Full', initialCondition: 'Excellent' });
                     setPlatNumber('');
+                    setCustomPlat('');
                 } catch (err) { console.error("Error:", err); handleNotify("Error submitting", "error"); }
                 finally { setIsSending(false); }
             };
@@ -241,8 +248,9 @@
                         </select>
                         {eq === 'Car' && <select className={SELECT_CLS} value={platNumber} onChange={e => setPlatNumber(e.target.value)}>
                             <option value="">Select vehicle</option>
-                            <option value="WRD 5900">WRD 5900</option>
+                            {PLAT_OPTIONS.map(o => <option key={o} value={o}>{o}</option>)}
                         </select>}
+                        {eq === 'Car' && platNumber === 'Other' && <input required placeholder="Vehicle plate (e.g. WRD 1234)" className={INPUT_CLS} value={customPlat} onChange={e => setCustomPlat(e.target.value)} />}
                         <textarea required placeholder="Purpose of use..." className="w-full p-3 md:p-4 bg-white/30 dark:bg-[#252535]/60 backdrop-blur-sm rounded-xl h-20 md:h-28 border border-white/40 dark:border-[#3a3a4a] text-white placeholder-white/60 focus:ring-2 focus:ring-white/50 transition-all resize-none" value={formData.purpose} onChange={e => updateForm('purpose', e.target.value)} />
                         <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
                             <div>
