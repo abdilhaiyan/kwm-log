@@ -20,7 +20,7 @@ These are non-negotiable behavior-preservation guarantees. If ANY of these regre
 | **Equipment type dropdown** | Same three options: "DJI Osmo Action 6", "Vehicles" (internal value `Car`), "Other" with conditional custom input field | LOW | Internal value `Car` vs display label "Vehicles" mapping must not change — existing Firestore data uses `Car` |
 | **Vehicle-specific fields** | Plat Number dropdown (WRD 5900), Borrow Time, Fuel Level (1 bar–Full) shown only when `cameraModel === 'Car'` | LOW | These are conditionally rendered based on `formData.cameraModel` |
 | **Non-vehicle equipment condition** | Equipment Condition dropdown (Excellent/Good/Fair/Damaged) shown when NOT `Car` | LOW | Mutually exclusive with vehicle fields |
-| **Manager authentication gate** | Passcode modal on Manager tab click, Enter key submits, passcode validated against Firestore `app_config` doc (fallback `DEFAULT_PASSCODE = "1234"`), optional new passcode field updates Firestore | MEDIUM | Passcode is loaded from Firestore on mount; must preserve the flow: modal → validate → set `isManagerAuthenticated` → switch to manager view |
+| **Manager authentication gate** | Passcode modal on Manager tab click, Enter key submits, passcode validated against the HTML constant `DEFAULT_PASSCODE = "1234"` (Block 2); no Firestore read, no rotation field | MEDIUM | Passcode is the `DEFAULT_PASSCODE` constant (rotate by editing it); must preserve the flow: modal → validate against constant → set `isManagerAuthenticated` → switch to manager view |
 | **Request list with status filtering** | Status filter dropdown (All/Pending/Approved/Returned/Rejected), equipment filter (All/DJI Camera/Vehicles/Other), search by name, date range filter, CLEAR button, filtered count on EXPORT button | LOW | Filter logic lives in `filteredRequests` useMemo — must produce identical results |
 | **Status counts dashboard** | Colored pill badges: Pending (amber), Active/Approved (emerald), Overdue (red), Returned (blue), Rejected (red) — counts computed from `statusCounts` useMemo with overdue logic (returnDate < today) | LOW | Overdue detection: `status === 'Approved'` AND `returnDate < today` |
 | **Request cards** | Same layout: status label, borrower name, equipment + plat + phone, duration, return date + days info, fuel level (vehicles), passed indicator, return condition (returned), history count badge, left-border highlight for unseen/overdue | MEDIUM | Card rendering is ~40 lines of conditional JSX — must produce identical DOM |
@@ -163,7 +163,7 @@ Lower Regression Risk
 | Clear filters | Click CLEAR | All filters reset, all requests shown |
 | Export CSV | Click EXPORT | CSV downloads with correct columns and data |
 | Passcode gate | Click Manager tab → enter wrong passcode | Modal stays, input clears. Enter correct → switches to manager view |
-| Change passcode | Enter new passcode in modal → Unlock | Firestore `app_config` updated, new passcode works on next attempt |
+| Rotation | Edit the DEFAULT_PASSCODE constant in index.html and reload | New value is required to unlock the manager view |
 | Dark mode toggle | Click Sun/Moon button | Theme toggles, persists across page reload |
 | Detail modal | Click any card | Modal opens with all fields, correct conditional sections, action buttons |
 | Mobile layout | Resize to phone width | Form full-width, nav flexes, cards stack, modals slide from bottom |
