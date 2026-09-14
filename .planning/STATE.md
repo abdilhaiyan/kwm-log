@@ -2,37 +2,35 @@
 gsd_state_version: 1.0
 milestone: v1.0
 milestone_name: milestone
-current_phase: 3
-current_phase_name: Configurable Plat & Approver Dropdowns
-status: complete
-stopped_at: Phase 3 complete — UAT passed (user-tested 2026-09-14)
-last_updated: "2026-09-14T15:00:00.000Z"
-last_activity: 2026-09-14
-last_activity_desc: Phase 3 complete — config-driven plat & approver dropdowns, UAT passed
+status: Awaiting next milestone
+stopped_at: Completed 02-02-PLAN.md (D-03 doc refresh)
+last_updated: "2026-09-14T16:21:36.558Z"
+last_activity: 2026-09-15
+last_activity_desc: Milestone v1.0 completed and archived
 progress:
   total_phases: 3
   completed_phases: 3
   total_plans: 6
   completed_plans: 6
+current_phase: 3
+current_phase_name: Configurable Plat & Approver Dropdowns
 ---
 
 # Project State
 
 ## Project Reference
 
-See: .planning/PROJECT.md (updated 2026-09-11)
+See: .planning/PROJECT.md (updated 2026-09-15)
 
 **Core value:** Accountable equipment handover — track who borrowed what, when, and whether it was returned, with an approval trail (approver name, passed status).
-**Current focus:** Phase 3 — Configurable Plat & Approver Dropdowns
+**Current focus:** Planning next milestone
 
 ## Current Position
 
-Phase: 3 (Configurable Plat & Approver Dropdowns) — COMPLETE
-Plan: 1 of 1 (03-01 executed, committed 2242f0b + 95a3cc1, UAT passed)
-Status: Phase 3 complete
-Last activity: 2026-09-14 — Phase 3 complete, UAT passed
-
-Progress: [██████████] 100%
+Phase: Milestone v1.0 complete
+Plan: —
+Status: Awaiting next milestone
+Last activity: 2026-09-15 — Milestone v1.0 completed and archived
 
 ## Performance Metrics
 
@@ -87,12 +85,19 @@ None yet.
 
 ## Deferred Items
 
-| Category | Item | Status | Deferred At |
-|----------|------|--------|-------------|
-| *(none)* | | | |
+Items acknowledged and deferred at milestone close on 2026-09-15:
+
+| Category | Item | Status |
+|----------|------|--------|
+| verification | phase-1-multi-block-decomposition | missing VERIFICATION.md — user-tested via UAT |
+| verification | phase-3-configurable-plat-approver-dropdowns | missing VERIFICATION.md — user-tested via UAT |
 
 ## Session Continuity
 
 Last session: 2026-09-14T04:06:56.705Z
 Stopped at: Completed 02-02-PLAN.md (D-03 doc refresh)
 Resume file: None
+
+## Operator Next Steps
+
+- Start the next milestone with /gsd-new-milestone

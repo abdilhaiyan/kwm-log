@@ -1,0 +1,17 @@
+{
+  "schema_version": 1,
+  "samples": [
+    {
+      "estimateTokens": 24000,
+      "actualTokens": 1093
+    },
+    {
+      "estimateTokens": 14000,
+      "actualTokens": 3945
+    },
+    {
+      "estimateTokens": 26000,
+      "actualTokens": 2213
+    }
+  ]
+}

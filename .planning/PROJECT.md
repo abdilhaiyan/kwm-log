@@ -32,12 +32,15 @@ Accountable equipment handover — track who borrowed what, when, and whether it
 - ✓ "Requested By" label (was "Staff Name") — existing
 - ✓ Enter key submits passcode modal — existing · Validated in Phase 2
 - ✓ Copied details include approver name/date — existing
+- ✓ Decompose the monolithic single `App` component into a maintainable 7-block structure — v1.0 (Phase 1)
+- ✓ Passcode stored as configurable HTML constant, Firestore passcode logic removed — v1.0 (Phase 2)
+- ✓ Plat Number and Approver as config-driven selects from editable constant arrays — v1.0 (Phase 3)
 
 ### Active
 
 <!-- Current scope. Building toward these. -->
 
-- [ ] Fix fragility: decompose the monolithic single `App` component (~14 `useState` hooks) into a cleaner, maintainable structure without changing behavior
+- (None — next milestone requirements to be defined via `/gsd-new-milestone`)
 
 ### Out of Scope
 
@@ -47,15 +50,17 @@ Accountable equipment handover — track who borrowed what, when, and whether it
 - User accounts / per-user login — passcode gate is enough for an internal team tool
 - Multi-language support — internal Malaysian team, single language
 - Native mobile app — web app is mobile-responsive and sufficient
+- ES modules / build step — violates single-file CDN deployment constraint
+- Firebase modular SDK migration — highest behavior-change risk; separate milestone
+- React 19 upgrade — requires ESM loading; separate milestone
 
 ## Context
 
-- **Current state:** The app is fully functional and in daily use at KWM Logistics. It was built incrementally in a single `index.html` file (CDN React 18, Tailwind with `darkMode: 'class'`, Babel, Lucide icons, Firebase compat v11.6.1 namespaced API). Phase 2 complete (2026-09-14): the manager passcode is now a config-driven constant — the Firestore passcode read/write path was removed entirely, rotation is a one-line edit, and the planning docs (PROJECT/FEATURES/ARCHITECTURE) were refreshed to match.
+- **Current state:** v1.0 MVP shipped 2026-09-15. The app is fully functional and in daily use at KWM Logistics. Built as a single `index.html` file (CDN React 18, Tailwind with `darkMode: 'class'`, Babel, Lucide icons, Firebase compat v11.6.1 namespaced API) organized into 7 ordered `text/babel` blocks (Constants → Config → Firebase Init → Utilities → Shared UI → App Shell → Render). Phase 2 (2026-09-14): the manager passcode is a config-driven constant — Firestore passcode read/write path removed, rotation is a one-line edit. Phase 3 (2026-09-14): Plat Number and Approver are config-driven selects from `PLAT_OPTIONS`/`APPROVER_OPTIONS` constants with "Other" free-text reveal.
 - **Firebase:** Project `kwm-logistics-camera`. Requests stored at `artifacts/camera-borrow-wiramas/public/data/borrowing_requests`. The manager passcode is the `DEFAULT_PASSCODE` constant in index.html Block 2 — rotating it means editing that constant and reloading. (The old `app_config` doc in Firestore still exists as harmless dead data the app never reads — D-02: leave it untouched, no cleanup.)
 - **Deployment:** Served locally via `python -m http.server 8080`; staff access over LAN at `http://10.0.6.12:8080` (non-secure context — hence the clipboard fallback).
-- **Known issue:** The app "works but feels fragile" — everything lives in one giant React component with ~14 `useState` hooks and inline JSX. Adding features is getting riskier. This is the main Active requirement.
-- **Data conventions:** Internal value `'Car'` kept in code/data; display label is "Vehicles". Plat numbers and approver names are hardcoded dropdowns (expandable later).
-- **Git:** Repo `https://github.com/abdilhaiyan/kwm-log`, branch `main`. The 8 most recent UI/UX changes are in the working tree, not yet pushed (user testing first).
+- **Git:** Repo `https://github.com/abdilhaiyan/kwm-log`, branch `main`. v1.0 pushed (commit `cd2e0ed`). GitHub Pages: `https://abdilhaiyan.github.io/kwm-log/`.
+- **Data conventions:** Internal value `'Car'` kept in code/data; display label is "Vehicles". Plat numbers and approver names are config-driven constants in Block 2 (`PLAT_OPTIONS`, `APPROVER_OPTIONS`) — adding one is a one-line insert before "Other".
 
 ## Constraints
 
@@ -74,8 +79,9 @@ Accountable equipment handover — track who borrowed what, when, and whether it
 | No EmailJS / in-app status only | Internal tool, status list is enough | ✓ Good |
 | Passcode as HTML constant (DEFAULT_PASSCODE) | Rotate by editing the constant; no Firestore dependency | ✓ Good (Phase 2) |
 | Internal `'Car'` value, "Vehicles" label | Avoids data migration; user-facing clarity | ✓ Good |
-| Hardcoded dropdowns (WRD 5900, Shafiq) | Fast to ship; expandable to Firestore later | — Pending |
-| Decompose monolithic component | Fragility concern — main Active requirement | — Pending |
+| Config-driven dropdowns (PLAT_OPTIONS, APPROVER_OPTIONS) | One-line constant edit to add options; no JSX/logic changes | ✓ Good (Phase 3) |
+| 7-block text/babel decomposition | Global scope via script order; zero import/export; single-file preserved | ✓ Good (Phase 1) |
+| Prop drilling, not React Context | 19 useState below the Context threshold at this scale | ✓ Good (Phase 1) |
 
 ## Evolution
 
@@ -95,4 +101,4 @@ This document evolves at phase transitions and milestone boundaries.
 4. Update Context with current state
 
 ---
-*Last updated: 2026-09-14 after Phase 2 completion*
+*Last updated: 2026-09-15 after v1.0 milestone*
