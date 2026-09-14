@@ -27,10 +27,10 @@ Accountable equipment handover — track who borrowed what, when, and whether it
 - ✓ CSV export of requests — existing
 - ✓ Copy request details to clipboard (3-tier mobile fallback for non-secure contexts) — existing
 - ✓ Dark mode toggle (persisted in localStorage) — existing
-- ✓ Passcode-protected manager actions (HTML constant DEFAULT_PASSCODE, edit to rotate) — existing
+- ✓ Passcode-protected manager actions (HTML constant DEFAULT_PASSCODE, edit to rotate) — existing · Validated in Phase 2
 - ✓ Plat Number dropdown for vehicles (WRD 5900) — existing
 - ✓ "Requested By" label (was "Staff Name") — existing
-- ✓ Enter key submits passcode modal — existing
+- ✓ Enter key submits passcode modal — existing · Validated in Phase 2
 - ✓ Copied details include approver name/date — existing
 
 ### Active
@@ -50,7 +50,7 @@ Accountable equipment handover — track who borrowed what, when, and whether it
 
 ## Context
 
-- **Current state:** The app is fully functional and in daily use at KWM Logistics. It was built incrementally in a single `index.html` file (CDN React 18, Tailwind with `darkMode: 'class'`, Babel, Lucide icons, Firebase compat v11.6.1 namespaced API).
+- **Current state:** The app is fully functional and in daily use at KWM Logistics. It was built incrementally in a single `index.html` file (CDN React 18, Tailwind with `darkMode: 'class'`, Babel, Lucide icons, Firebase compat v11.6.1 namespaced API). Phase 2 complete (2026-09-14): the manager passcode is now a config-driven constant — the Firestore passcode read/write path was removed entirely, rotation is a one-line edit, and the planning docs (PROJECT/FEATURES/ARCHITECTURE) were refreshed to match.
 - **Firebase:** Project `kwm-logistics-camera`. Requests stored at `artifacts/camera-borrow-wiramas/public/data/borrowing_requests`. The manager passcode is the `DEFAULT_PASSCODE` constant in index.html Block 2 — rotating it means editing that constant and reloading. (The old `app_config` doc in Firestore still exists as harmless dead data the app never reads — D-02: leave it untouched, no cleanup.)
 - **Deployment:** Served locally via `python -m http.server 8080`; staff access over LAN at `http://10.0.6.12:8080` (non-secure context — hence the clipboard fallback).
 - **Known issue:** The app "works but feels fragile" — everything lives in one giant React component with ~14 `useState` hooks and inline JSX. Adding features is getting riskier. This is the main Active requirement.
@@ -95,4 +95,4 @@ This document evolves at phase transitions and milestone boundaries.
 4. Update Context with current state
 
 ---
-*Last updated: 2026-09-11 after initialization*
+*Last updated: 2026-09-14 after Phase 2 completion*
