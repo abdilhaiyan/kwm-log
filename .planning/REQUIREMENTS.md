@@ -15,9 +15,9 @@
 
 ### Passcode Configuration
 
-- [ ] **PASS-01**: Manager passcode stored as a configurable constant in the HTML code (e.g. `const DEFAULT_PASSCODE = "1234"`), not integrated with Firebase
-- [ ] **PASS-02**: Remove Firestore passcode fetch and update logic (no `app_config` doc reads/writes for passcode)
-- [ ] **PASS-03**: Keep the passcode modal UI (input + Unlock button + Enter key submit) — just validate against the local constant
+- [x] **PASS-01**: Manager passcode stored as a configurable constant in the HTML code (e.g. `const DEFAULT_PASSCODE = "1234"`), not integrated with Firebase
+- [x] **PASS-02**: Remove Firestore passcode fetch and update logic (no `app_config` doc reads/writes for passcode)
+- [x] **PASS-03**: Keep the passcode modal UI (input + Unlock button + Enter key submit) — just validate against the local constant
 
 ### Plat Number
 
@@ -67,9 +67,9 @@ Which phases cover which requirements. Updated during roadmap creation.
 | REF-03 | Phase 1 | Pending |
 | REF-04 | Phase 1 | Pending |
 | REF-05 | Phase 1 | Pending |
-| PASS-01 | Phase 2 | Pending |
-| PASS-02 | Phase 2 | Pending |
-| PASS-03 | Phase 2 | Pending |
+| PASS-01 | Phase 2 | Complete |
+| PASS-02 | Phase 2 | Complete |
+| PASS-03 | Phase 2 | Complete |
 | PLAT-01 | Phase 3 | Pending |
 | PLAT-02 | Phase 3 | Pending |
 | PLAT-03 | Phase 3 | Pending |
@@ -77,6 +77,7 @@ Which phases cover which requirements. Updated during roadmap creation.
 | APPR-02 | Phase 3 | Pending |
 
 **Coverage:**
+
 - v1 requirements: 13 total
 - Mapped to phases: 13
 - Unmapped: 0 ✓
