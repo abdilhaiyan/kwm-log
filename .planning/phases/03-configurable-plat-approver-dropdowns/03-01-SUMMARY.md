@@ -80,8 +80,8 @@ coverage:
     description: "Real-browser behavior: dropdowns render in order, Other reveals inputs, typed values recorded and displayed end-to-end, no regressions in camera/fuel/filter/return flows"
     verification:
       - kind: manual_procedural
-        ref: "python -m http.server 8080 → http://10.0.6.12:8080 UAT list (plan verification section)"
-        status: unknown
+        ref: "python -m http.server 8080 → http://10.0.6.12:8080 UAT list (plan verification section) — user-tested 2026-09-14, all OK"
+        status: pass
     human_judgment: true
     rationale: "Babel standalone cannot run in the preview env (Phase 1 finding); browser UAT requires a real served page and human judgment on visual/UX behavior"
 

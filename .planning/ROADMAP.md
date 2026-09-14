@@ -10,7 +10,7 @@ This milestone refactors the monolithic single-file React app (one ~532-line `Ap
 
 - [ ] **Phase 1: Multi-Block Decomposition** - Split the monolithic App into 7 ordered script blocks with no user-visible change
 - [x] **Phase 2: Config-Driven Passcode** - Passcode validated against an HTML constant; Firestore passcode logic removed (completed 2026-09-14)
-- [ ] **Phase 3: Configurable Plat & Approver Dropdowns** - Plat Number and Approver selects driven by editable constant arrays
+- [x] **Phase 3: Configurable Plat & Approver Dropdowns** - Plat Number and Approver selects driven by editable constant arrays (completed 2026-09-14)
 
 ## Phase Details
 
@@ -88,4 +88,4 @@ Phases execute in numeric order: 1 → 2 → 3
 |-------|----------------|--------|-----------|
 | 1. Multi-Block Decomposition | 0/3 | Planned | - |
 | 2. Config-Driven Passcode | 2/2 | Complete    | 2026-09-14 |
-| 3. Configurable Plat & Approver Dropdowns | 1/1 | Executed (UAT pending) | - |
+| 3. Configurable Plat & Approver Dropdowns | 1/1 | Complete | 2026-09-14 |
