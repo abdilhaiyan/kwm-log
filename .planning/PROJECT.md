@@ -27,7 +27,7 @@ Accountable equipment handover — track who borrowed what, when, and whether it
 - ✓ CSV export of requests — existing
 - ✓ Copy request details to clipboard (3-tier mobile fallback for non-secure contexts) — existing
 - ✓ Dark mode toggle (persisted in localStorage) — existing
-- ✓ Passcode-protected manager actions (changeable, stored in Firestore) — existing
+- ✓ Passcode-protected manager actions (HTML constant DEFAULT_PASSCODE, edit to rotate) — existing
 - ✓ Plat Number dropdown for vehicles (WRD 5900) — existing
 - ✓ "Requested By" label (was "Staff Name") — existing
 - ✓ Enter key submits passcode modal — existing
@@ -51,7 +51,7 @@ Accountable equipment handover — track who borrowed what, when, and whether it
 ## Context
 
 - **Current state:** The app is fully functional and in daily use at KWM Logistics. It was built incrementally in a single `index.html` file (CDN React 18, Tailwind with `darkMode: 'class'`, Babel, Lucide icons, Firebase compat v11.6.1 namespaced API).
-- **Firebase:** Project `kwm-logistics-camera`. Requests stored at `artifacts/camera-borrow-wiramas/public/data/borrowing_requests`. App config (changeable passcode) at `artifacts/camera-borrow-wiramas/public/data/app_config` (doc id `app_config`, field `passcode`, fallback `DEFAULT_PASSCODE` = "1234").
+- **Firebase:** Project `kwm-logistics-camera`. Requests stored at `artifacts/camera-borrow-wiramas/public/data/borrowing_requests`. The manager passcode is the `DEFAULT_PASSCODE` constant in index.html Block 2 — rotating it means editing that constant and reloading. (The old `app_config` doc in Firestore still exists as harmless dead data the app never reads — D-02: leave it untouched, no cleanup.)
 - **Deployment:** Served locally via `python -m http.server 8080`; staff access over LAN at `http://10.0.6.12:8080` (non-secure context — hence the clipboard fallback).
 - **Known issue:** The app "works but feels fragile" — everything lives in one giant React component with ~14 `useState` hooks and inline JSX. Adding features is getting riskier. This is the main Active requirement.
 - **Data conventions:** Internal value `'Car'` kept in code/data; display label is "Vehicles". Plat numbers and approver names are hardcoded dropdowns (expandable later).
@@ -62,7 +62,7 @@ Accountable equipment handover — track who borrowed what, when, and whether it
 - **Tech stack**: Single-file HTML with CDN React 18 + Tailwind + Babel + Lucide + Firebase compat v11.6.1 — no build step, no npm, no bundler. Keep it that way.
 - **Firebase API style**: Namespaced compat API (`firebase.auth()`, `db.collection()`, `.add()`, `.doc().update()`) — not the modular v9+ API.
 - **Mobile-first**: Staff use phones over LAN HTTP (non-secure context). Clipboard, layout, and touch interactions must work there.
-- **Security**: Manager actions gated by passcode (Firestore-backed, changeable). No user accounts.
+- **Security**: Manager actions gated by the passcode constant in HTML; rotate by editing `DEFAULT_PASSCODE`. No user accounts.
 - **Compatibility**: Must keep working as a single file that can be opened/served anywhere without a build step.
 
 ## Key Decisions
@@ -72,7 +72,7 @@ Accountable equipment handover — track who borrowed what, when, and whether it
 | Single-file CDN app (no build step) | Simple deployment, no toolchain for a small internal tool | ✓ Good |
 | Firebase compat namespaced API | Matches existing code, stable | ✓ Good |
 | No EmailJS / in-app status only | Internal tool, status list is enough | ✓ Good |
-| Passcode in Firestore (changeable) | Managers can rotate it without editing code | ✓ Good |
+| Passcode as HTML constant (DEFAULT_PASSCODE) | Rotate by editing the constant; no Firestore dependency | ✓ Good (Phase 2) |
 | Internal `'Car'` value, "Vehicles" label | Avoids data migration; user-facing clarity | ✓ Good |
 | Hardcoded dropdowns (WRD 5900, Shafiq) | Fast to ship; expandable to Firestore later | — Pending |
 | Decompose monolithic component | Fragility concern — main Active requirement | — Pending |
