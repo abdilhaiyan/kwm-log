@@ -44,7 +44,7 @@ Plans:
   3. No `app_config` document reads or writes appear in the network panel during unlock, page reload, or a full session — Firestore passcode logic is gone
   4. The change-passcode control is removed; rotating the passcode now means editing the `DEFAULT_PASSCODE` constant at the top of index.html
   5. The passcode modal looks and behaves identically (input, Unlock button, Enter submit, error state)
-**Plans**: TBD
+**Plans**: 2 plans
 **UI hint**: yes
 
 ### Phase 3: Configurable Plat & Approver Dropdowns
