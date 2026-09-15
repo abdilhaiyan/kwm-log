@@ -8,6 +8,16 @@ A mobile-first web app for KWM Logistics staff to request equipment (cameras, ve
 
 Accountable equipment handover — track who borrowed what, when, and whether it was returned, with an approval trail (approver name, passed status) so nothing gets lost or unaccounted.
 
+## Current Milestone: v1.1 Sortable Lists & Manager Styling
+
+**Goal:** Let managers reorder the dropdown lists (equipment, vehicle plates, approvers) from Settings — the order applies to every form/list that renders them and syncs to all devices — and make the manager Approve/Reject buttons match the glassmorphic theme.
+
+**Target features:**
+- Up/down reorder controls in all three Settings list cards (Equipment, Vehicle Plates, Approvers)
+- "Other" stays pinned as the last item in every list when sorting
+- Reorder persisted to Firestore → synced live to the request form select, manager filter select, detail views, and any future surface rendering the list
+- Approve/Reject buttons restyled to the translucent glass theme in manager request cards and the detail modal
+
 ## Requirements
 
 ### Validated
@@ -40,7 +50,10 @@ Accountable equipment handover — track who borrowed what, when, and whether it
 
 <!-- Current scope. Building toward these. -->
 
-- (None — next milestone requirements to be defined via `/gsd-new-milestone`)
+- [ ] Manager can reorder items (up/down) in all three Settings list cards — v1.1
+- [ ] "Other" stays pinned as the last item in each list when sorting — v1.1
+- [ ] Reordered lists sync to the request form select, manager filter select, and detail views on all devices — v1.1
+- [ ] Approve/Reject buttons use the glassmorphic theme in manager request cards and the detail modal — v1.1
 
 ### Out of Scope
 
@@ -56,7 +69,7 @@ Accountable equipment handover — track who borrowed what, when, and whether it
 
 ## Context
 
-- **Current state:** v1.0 MVP shipped 2026-09-15. The app is fully functional and in daily use at KWM Logistics. Built as a single `index.html` file (CDN React 18, Tailwind with `darkMode: 'class'`, Babel, Lucide icons, Firebase compat v11.6.1 namespaced API) organized into 7 ordered `text/babel` blocks (Constants → Config → Firebase Init → Utilities → Shared UI → App Shell → Render). Phase 2 (2026-09-14): the manager passcode is a config-driven constant — Firestore passcode read/write path removed, rotation is a one-line edit. Phase 3 (2026-09-14): Plat Number and Approver are config-driven selects from `PLAT_OPTIONS`/`APPROVER_OPTIONS` constants with "Other" free-text reveal.
+- **Current state:** v1.1 started 2026-09-15. Settings already ships three `ListEditor` cards (add/edit/delete) whose changes sync via Firestore `options/lists` doc → `onSnapshot` → shared `equipmentOptions`/`platOptions`/`approverOptions` state; any surface that renders a list consumes that shared state, so a persisted reorder propagates everywhere automatically. v1.1 adds up/down reordering to those cards and restyles the manager Approve/Reject buttons to the translucent glass theme. (v1.0 context below.)
 - **Firebase:** Project `kwm-logistics-camera`. Requests stored at `artifacts/camera-borrow-wiramas/public/data/borrowing_requests`. The manager passcode is the `DEFAULT_PASSCODE` constant in index.html Block 2 — rotating it means editing that constant and reloading. (The old `app_config` doc in Firestore still exists as harmless dead data the app never reads — D-02: leave it untouched, no cleanup.)
 - **Deployment:** Served locally via `python -m http.server 8080`; staff access over LAN at `http://10.0.6.12:8080` (non-secure context — hence the clipboard fallback).
 - **Git:** Repo `https://github.com/abdilhaiyan/kwm-log`, branch `main`. v1.0 pushed (commit `cd2e0ed`). GitHub Pages: `https://abdilhaiyan.github.io/kwm-log/`.
@@ -101,4 +114,4 @@ This document evolves at phase transitions and milestone boundaries.
 4. Update Context with current state
 
 ---
-*Last updated: 2026-09-15 after v1.0 milestone*
+*Last updated: 2026-09-15 after starting v1.1 milestone (Sortable Lists & Manager Styling)*
