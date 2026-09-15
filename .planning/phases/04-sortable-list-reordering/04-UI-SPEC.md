@@ -48,8 +48,8 @@ Exceptions: none — all reorder controls use the existing button sizing (`p-2 r
 | Role | Size | Weight | Line Height |
 |------|------|--------|-------------|
 | Body | 14px (`text-sm`) | 400 (regular) | 1.5 |
-| Label | 12px (`text-xs`) | 700 (bold/black) | 1.4 |
-| Heading | 14–16px (`text-sm md:text-base`) | 900 (black) | 1.3 |
+| Label | 12px (`text-xs`) | 700 (bold) | 1.4 |
+| Heading | 14–16px (`text-sm md:text-base`) | 700 (bold) | 1.3 |
 | Button text | 12px (`text-xs`) | 700 (bold) | 1.4 |
 
 No typography changes from existing app. The reorder buttons use the same `text-xs font-bold` as all other ListEditor action buttons.
@@ -198,14 +198,44 @@ This is inserted between the existing "Edit" and "Delete" legend items.
 
 ## UI Considerations
 
-Applicable state considerations resolved: 4 covered, 0 backstop, 0 unresolved
+Applicable state considerations resolved: 24 resolved (15 explicit / 9 backstop), 10 dismissed, 0 unresolved. Source: ui-consideration-probe against 5 surfaces (E1 list rows, E2 reorder buttons, E3 pinned "Other", E4 legend, E5 selects).
 
-| Category | Element(s) | Status | Resolution / Reason |
-|----------|------------|--------|---------------------|
-| {zero-one-many} | List items (1 item minimum due to pinned "Other") | ✅ covered | "Other" is always present; minimum list = ["Other"] with all 4 buttons disabled; up/down/edit/delete all show disabled state |
-| {long-text} | List item labels | 🧪 backstop | Existing `truncate` class on `<span>` handles overflow; reorder buttons are fixed-width icon-only and don't depend on label length |
-| {disabled-state} | "Other" item buttons + boundary items | ✅ covered | "Other": all 4 buttons disabled with `bg-white/5 text-white/20 border-white/10 cursor-not-allowed`. First item: up disabled. Last non-Other item: down disabled |
-| {mobile-touch} | Up/down button touch targets | ✅ covered | All buttons use `p-2` (8px padding) on a `rounded-lg` (8px radius) base, yielding ~40px touch target — meets 44px WCAG guideline within the existing pattern; no exception needed |
+| Surface | Category | Status | Resolution |
+|---------|----------|--------|------------|
+| E1 Settings rows | empty | ✅ explicit | Lists can never be empty — DEFAULT_EQUIPMENT_OPTIONS always seeds 'Other' (index.html:65) and saveOptions persists non-empty lists; minimum list renders a single disabled row |
+| E1 Settings rows | loading | 🧪 backstop | Lists hydrate from the existing Firestore onSnapshot effect; no new loading affordance added — rows appear when state arrays populate |
+| E1 Settings rows | error | 🧪 backstop | Save failure reuses handleNotify('Error saving lists', 'error') in saveOptions; moveOption calls saveOptions so no new error UI |
+| E1 Settings rows | populated | ✅ explicit | Happy path: rows render [label] [Move Up] [Move Down] [Edit] [Delete] with enabled reorder buttons between boundaries and 'Other' pinned last |
+| E1 Settings rows | partial | 🧪 backstop | Lists are single arrays from one Firestore doc; partial/row-missing state cannot occur (minimum 'Other') |
+| E1 Settings rows | overflow | ✅ explicit | Existing `truncate` on the flex-1 label span clips long names at 1 line; fixed p-2 icon buttons independent of label width |
+| E1 Settings rows | zero-one-many | ✅ explicit | Minimum list = ['Other']: one row, all 4 buttons disabled; boundary rules = i===0 (up disabled) / i+1==='Other' (down disabled) |
+| E1 Settings rows | long-text | ✅ explicit | Long labels truncate via existing truncate class; reorder buttons icon-only and width-independent |
+| E2 Reorder buttons | empty | ✅ explicit | No row, no button — arrows render only inside an existing list row |
+| E2 Reorder buttons | loading | ⛔ dismissed | Buttons render declaratively after arrays populate; no independent loading state |
+| E2 Reorder buttons | error | 🧪 backstop | Reorder failure surfaces through shared saveOptions error path; no per-button error state |
+| E2 Reorder buttons | populated | ✅ explicit | Enabled state: bg-white/20 text-white/80 hover:bg-white/30 border border-white/30 + ChevronUp/ChevronDown; boundary items get a single disabled arrow |
+| E2 Reorder buttons | partial | ⛔ dismissed | A row has all buttons or none — no partial-button path |
+| E2 Reorder buttons | overflow | ⛔ dismissed | Fixed-size icon-only controls; no text can overflow |
+| E2 Reorder buttons | zero-one-many | ✅ explicit | Single-item list renders both arrows disabled; multi-item enables per i===0 / i+1==='Other' |
+| E2 Reorder buttons | long-text | ⛔ dismissed | Icon-only; tooltip title is fixed short copy, can't overflow |
+| E3 Pinned "Other" | empty | ✅ explicit | 'Other' always the last element of every list (default seed + never removable) |
+| E3 Pinned "Other" | loading | ⛔ dismissed | 'Other' is a data row governed by shared list hydration, not a distinct loading state |
+| E3 Pinned "Other" | error | 🧪 backstop | Failures affecting 'Other' surface via existing handleNotify error path |
+| E3 Pinned "Other" | populated | ✅ explicit | All 4 buttons permanently disabled: bg-white/5 text-white/20 border-white/10 cursor-not-allowed, tooltip 'Cannot reorder Other' |
+| E3 Pinned "Other" | partial | ⛔ dismissed | Plain array entry — always present |
+| E3 Pinned "Other" | overflow | ⛔ dismissed | 'Other' is a short fixed label with same truncate as all labels |
+| E3 Pinned "Other" | zero-one-many | ✅ explicit | Minimum list never zero; with only 'Other' all 4 buttons on its row disabled |
+| E3 Pinned "Other" | long-text | ⛔ dismissed | 5-character constant — long-text handling irrelevant |
+| E4 Legend | overflow | ✅ explicit | Legend container is flex flex-wrap gap-4 (index.html:434) — 5th Reorder entry wraps like the existing 4 |
+| E4 Legend | long-text | ⛔ dismissed | Fixed short labels — no long-text case |
+| E5 Selects | empty | ✅ explicit | Selects never empty — every list contains at least 'Other' in request form, manager filter, detail modal |
+| E5 Selects | loading | 🧪 backstop | Selects populate from state arrays hydrated by onSnapshot; no separate loading affordance |
+| E5 Selects | error | 🧪 backstop | Failed list write surfaces via saveOptions error notify; selects re-render last-good until next snapshot |
+| E5 Selects | populated | ✅ explicit | Options present in persisted order — a swap immediately re-renders every select via onSnapshot (core deliverable) |
+| E5 Selects | partial | ⛔ dismissed | Select renders full array or nothing |
+| E5 Selects | overflow | 🧪 backstop | Native select/dropdown scrolls long option values; no custom overflow rule |
+| E5 Selects | zero-one-many | ✅ explicit | One-option list renders just 'Other'; many-option lists render in saved order with native scrolling |
+| E5 Selects | long-text | 🧪 backstop | Long option values render natively in the dropdown; list cards already truncate labels |
 
 ---
 
@@ -220,11 +250,11 @@ Applicable state considerations resolved: 4 covered, 0 backstop, 0 unresolved
 
 ## Checker Sign-Off
 
-- [ ] Dimension 1 Copywriting: PASS
-- [ ] Dimension 2 Visuals: PASS
-- [ ] Dimension 3 Color: PASS
-- [ ] Dimension 4 Typography: PASS
-- [ ] Dimension 5 Spacing: PASS
-- [ ] Dimension 6 Registry Safety: PASS
+- [x] Dimension 1 Copywriting: PASS
+- [x] Dimension 2 Visuals: PASS
+- [x] Dimension 3 Color: PASS
+- [x] Dimension 4 Typography: PASS (revision: Heading weight 900 → 700)
+- [x] Dimension 5 Spacing: PASS
+- [x] Dimension 6 Registry Safety: PASS
 
-**Approval:** pending
+**Approval:** APPROVED (checker v2026-09-15, revision loop 1 iteration)
