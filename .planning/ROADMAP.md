@@ -35,7 +35,11 @@
   3. "Other" stays pinned as the last item in every list after any sequence of moves — its up/down controls are disabled, matching the existing lock on edit/delete.
   4. After a page reload — and on a second phone or computer — every list renders in the saved order for all users (order persisted via Firestore).
   5. Reordered order applies live to every surface rendering the list (request form select, manager filter select, detail view selects) without an app restart.
-**Plans**: TBD
+**Plans**: 1 plan
+
+Plans:
+- [ ] 04-01-PLAN.md — Sortable list reordering (moveOption with bounds guard, ListEditor Up/Down UI, addOption insert-before-Other, createIcons refresh)
+
 **UI hint**: yes
 
 ### Phase 5: Manager Glassmorphic Styling
