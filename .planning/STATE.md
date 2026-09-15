@@ -3,10 +3,10 @@ gsd_state_version: 1.0
 milestone: v1.1
 milestone_name: Sortable Lists & Manager Styling
 status: planning
-last_updated: "2026-09-15T01:36:36.612Z"
+last_updated: "2026-09-15T00:00:00.000Z"
 last_activity: 2026-09-15
 progress:
-  total_phases: 0
+  total_phases: 2
   completed_phases: 0
   total_plans: 0
   completed_plans: 0
@@ -20,14 +20,16 @@ progress:
 See: .planning/PROJECT.md (updated 2026-09-15)
 
 **Core value:** Accountable equipment handover — track who borrowed what, when, and whether it was returned, with an approval trail (approver name, passed status).
-**Current focus:** Planning next milestone
+**Current focus:** Sortable List Reordering (Phase 4)
 
 ## Current Position
 
-Phase: Not started (defining requirements)
-Plan: —
-Status: Defining requirements
-Last activity: 2026-09-15 — Milestone v1.1 started
+Phase: 4 of 5 (Sortable List Reordering)
+Plan: 0 of 0 (TBD — plan count set during /gsd-plan-phase)
+Status: Ready to plan
+Last activity: 2026-09-15 — Roadmap created for v1.1 (Phases 4-5)
+
+Progress: [░░░░░░░░░░] 0%
 
 ## Performance Metrics
 
@@ -60,15 +62,10 @@ Last activity: 2026-09-15 — Milestone v1.1 started
 
 Full log in PROJECT.md Key Decisions. Recent decisions affecting current work:
 
-- [Phase 1]: Decompose into 7 ordered `text/babel` blocks in one index.html — global scope via script order, zero import/export (Babel standalone transforms import → require)
-- [Phase 1]: Prop drilling, NOT React Context — 14 useState is below the Context threshold at this scale
-- [Phase 2]: Passcode validated against HTML constant; Firestore `app_config` reads/writes removed — rotation via constant edit
-- [Phase 3]: Plat + Approver option lists as editable constants at top of file
-- [Phase 3]: `PLAT_OPTIONS = ['WRD 5900', 'Other']` + `APPROVER_OPTIONS = ['Shafiq', 'Other']` in Block 2 beside `DEFAULT_PASSCODE`; "Other" last reveals required free-text input (equipment pattern); typed value recorded via `finalPlat`/`finalApprover` ternaries; `|| 'N/A'` fallback preserved; `approverName` stays single shared state between card and modal selects
-- [Phase ?]: Passcode validated against HTML constant; Firestore app_config read/write removed; rotation via constant edit (D-01 comment)
-- [Phase ?]: Firestore app_config doc left untouched as dead data (D-02)
-- [Phase ?]: D-03 implemented: PROJECT.md, FEATURES.md, ARCHITECTURE.md refreshed to describe the constant-based passcode (DEFAULT_PASSCODE, edit to rotate) with zero Firestore passcode-flow claims
-- [Phase ?]: PROJECT.md Key Decisions: 'Passcode in Firestore (changeable)' superseded by 'Passcode as HTML constant (DEFAULT_PASSCODE)' — rotate by editing the constant, no Firestore dependency
+- [Roadmap]: v1.1 split into 2 phases (not 4-6) — the 6 SORT requirements share one ListEditor + `saveOptions()` path (splitting controls from persistence creates non-verifiable half-features); the 4 UI requirements are the same class swap in two JSX locations; standard granularity guidance is to fold thin work into neighbors, not pad
+- [Phase 4]: Reordering writes rearranged arrays through the existing `saveOptions()` → `doc('lists').set({...}, {merge:true})` path — no new state plumbing or storage schema
+- [Phase 4]: "Other" stays pinned last via the existing disable pattern (`disabled={o === 'Other'}`) extended to the new up/down controls
+- [Phase 5]: Target classes are lines 527-528 (cards) and 670-671 (modal) of index.html: swap `bg-emerald-500/80 text-white hover:bg-emerald-500` → `bg-emerald-500/20 text-emerald-300 hover:bg-emerald-500/30` (and red equivalents), matching the editor buttons' glass pattern (`bg-red-500/20 text-red-300 border-red-400/30`)
 
 ### Pending Todos
 
@@ -91,10 +88,10 @@ Items acknowledged and deferred at milestone close on 2026-09-15:
 
 ## Session Continuity
 
-Last session: 2026-09-14T04:06:56.705Z
-Stopped at: Completed 02-02-PLAN.md (D-03 doc refresh)
+Last session: 2026-09-15
+Stopped at: Created v1.1 roadmap (Phases 4-5, 10/10 requirements mapped)
 Resume file: None
 
 ## Operator Next Steps
 
-- Start the next milestone with /gsd-new-milestone
+- Plan Phase 4 with /gsd-plan-phase 4 (Sortable List Reordering)

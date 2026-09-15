@@ -49,21 +49,21 @@ Which phases cover which requirements. Updated during roadmap creation.
 
 | Requirement | Phase | Status |
 |-------------|-------|--------|
-| SORT-01 | — | Pending |
-| SORT-02 | — | Pending |
-| SORT-03 | — | Pending |
-| SORT-04 | — | Pending |
-| SORT-05 | — | Pending |
-| SORT-06 | — | Pending |
-| UI-01 | — | Pending |
-| UI-02 | — | Pending |
-| UI-03 | — | Pending |
-| UI-04 | — | Pending |
+| SORT-01 | Phase 4 | Pending |
+| SORT-02 | Phase 4 | Pending |
+| SORT-03 | Phase 4 | Pending |
+| SORT-04 | Phase 4 | Pending |
+| SORT-05 | Phase 4 | Pending |
+| SORT-06 | Phase 4 | Pending |
+| UI-01 | Phase 5 | Pending |
+| UI-02 | Phase 5 | Pending |
+| UI-03 | Phase 5 | Pending |
+| UI-04 | Phase 5 | Pending |
 
 **Coverage:**
 - v1 requirements: 10 total
-- Mapped to phases: 0
-- Unmapped: 10 ⚠️ (filled by roadmap)
+- Mapped to phases: 10
+- Unmapped: 0 ✓
 
 ---
 *Requirements defined: 2026-09-15*
