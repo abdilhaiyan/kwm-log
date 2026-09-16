@@ -310,7 +310,7 @@ Open Settings → DevTools console:
 | A4 | Node 24.18.0 / npm 11.16.0 availability (verified earlier in the working session via `node --version` / `npm --version`) | Environment Availability | Only used for `gsd-tools`; the app itself requires only Python 3.12 (verified live) and a browser |
 | A5 | Reorder legend entry placement (before Edit vs. between Edit and Delete per UI-SPEC literal text) | Code Examples | Cosmetic only (E4 wrap verified) — no functional impact whichever is chosen |
 
-## Open Questions
+## Open Questions (RESOLVED)
 
 1. **Accept the Down-boundary amendment?** (`i >= items.length - 1` in the disabled condition + `moveOption` bounds guard)
    - What we know: Proven necessary — live data has a non-`'Other'` tail (`'Laptop'`), and the UI-SPEC's literal rule enables a corruption swap at the last index (Pitfall 2).
