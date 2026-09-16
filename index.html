@@ -114,8 +114,8 @@
                                 ) : (
                                     <>
                                         <span className="flex-1 text-sm text-white/80 truncate">{getEquipDisplay(o)}</span>
-                                        <button onClick={() => onMoveUp(i)} disabled={o === 'Other' || i === 0} title={o === 'Other' ? 'Cannot move Other' : 'Move up'} className={`p-2 rounded-lg transition-all border ${o === 'Other' || i === 0 ? 'bg-white/5 text-white/20 border-white/10 cursor-not-allowed' : 'bg-white/20 text-white hover:bg-white/30 border-white/30'}`}><Icon name="ChevronUp" size={14} /></button>
-                                        <button onClick={() => onMoveDown(i)} disabled={o === 'Other' || i >= items.length - 1} title={o === 'Other' ? 'Cannot move Other' : 'Move down'} className={`p-2 rounded-lg transition-all border ${o === 'Other' || i >= items.length - 1 ? 'bg-white/5 text-white/20 border-white/10 cursor-not-allowed' : 'bg-white/20 text-white hover:bg-white/30 border-white/30'}`}><Icon name="ChevronDown" size={14} /></button>
+                                        <button onClick={() => onMoveUp(i)} disabled={i === 0 || o === 'Other'} title={o === 'Other' ? 'Cannot reorder Other' : i === 0 ? 'Already at top' : 'Move up'} className={`p-2 rounded-lg transition-all border ${i === 0 || o === 'Other' ? 'bg-white/5 text-white/20 border-white/10 cursor-not-allowed' : 'bg-white/20 text-white/80 hover:bg-white/30 border border-white/30'}`}><Icon name="ChevronUp" size={14} /></button>
+                                        <button onClick={() => onMoveDown(i)} disabled={o === 'Other' || i >= items.length - 1 || items[i+1] === 'Other'} title={o === 'Other' ? 'Cannot reorder Other' : i >= items.length - 1 ? 'Already at bottom' : 'Move down'} className={`p-2 rounded-lg transition-all border ${o === 'Other' || i >= items.length - 1 || items[i+1] === 'Other' ? 'bg-white/5 text-white/20 border-white/10 cursor-not-allowed' : 'bg-white/20 text-white/80 hover:bg-white/30 border border-white/30'}`}><Icon name="ChevronDown" size={14} /></button>
                                         <button onClick={() => setEditing({ list: listKey, idx: i, val: o })} disabled={o === 'Other'} title={o === 'Other' ? 'Cannot edit Other' : 'Edit'} className={`p-2 rounded-lg transition-all border ${o === 'Other' ? 'bg-white/5 text-white/20 border-white/10 cursor-not-allowed' : 'bg-blue-500/20 text-blue-300 hover:bg-blue-500/30 border-blue-400/30'}`}><Icon name="Pencil" size={14} /></button>
                                         <button onClick={() => onRequestDelete(i, o)} disabled={o === 'Other'} title={o === 'Other' ? 'Cannot delete Other' : 'Delete'} className={`p-2 rounded-lg transition-all border ${o === 'Other' ? 'bg-white/5 text-white/20 border-white/10 cursor-not-allowed' : 'bg-red-500/20 text-red-300 hover:bg-red-500/30 border-red-400/30'}`}><Icon name="Trash2" size={14} /></button>
                                     </>
@@ -243,8 +243,8 @@
                 const v = (value || '').trim(); if (!v) return;
                 const next = { equipment: equipmentOptions, plat: platOptions, approver: approverOptions };
                 if (next[list].includes(v)) { handleNotify("Already in list", "error"); return; }
-                const otherIdx = next[list].indexOf('Other');
-                next[list] = otherIdx >= 0 ? [...next[list].slice(0, otherIdx), v, ...next[list].slice(otherIdx)] : [...next[list], v];
+                const last = next[list][next[list].length - 1];
+                next[list] = last === 'Other' ? [...next[list].slice(0, -1), v, 'Other'] : [...next[list], v];
                 saveOptions(next.plat, next.approver, next.equipment);
                 setNewItem(p => ({ ...p, [list]: '' }));
             };
@@ -261,19 +261,14 @@
                 next[list] = next[list].filter((_, i) => i !== idx);
                 saveOptions(next.plat, next.approver, next.equipment);
             };
-            const moveOption = (list, idx, dir) => {
+            const moveOption = (list, fromIdx, toIdx) => {
                 const next = { equipment: equipmentOptions, plat: platOptions, approver: approverOptions };
-                if (next[list][idx] === 'Other') return;
-                const toIdx = idx + (dir === 'up' ? -1 : 1);
-                const arr = next[list];
+                const arr = [...next[list]];
                 if (toIdx < 0 || toIdx >= arr.length) return;
-                const moved = arr.slice();
-                const tmp = moved[idx];
-                moved[idx] = moved[toIdx];
-                moved[toIdx] = tmp;
-                next[list] = moved;
+                [arr[fromIdx], arr[toIdx]] = [arr[toIdx], arr[fromIdx]];
+                next[list] = arr;
                 saveOptions(next.plat, next.approver, next.equipment);
-            };
+            }
             const confirmDelete = async () => {
                 if (!deleteModal) return;
                 if (deletePasscode !== appPasscode) { setDeletePasscode(''); handleNotify("Wrong passcode", "error"); return; }
@@ -448,7 +443,7 @@
                                     <h2 className="text-lg md:text-xl font-black text-white mb-1">Settings</h2>
                                     <p className="text-xs text-white/60">Customize the dropdown lists. Changes sync instantly to the form, manager view, and search menu on all devices.</p>
                                     <div className="flex flex-wrap gap-4 mt-3 text-[10px] text-white/50">
-                                        <div className="flex flex-col items-center gap-1"><span>Reorder</span><div className="w-3 h-3 rounded-full bg-white/20 border border-white/30"></div></div>
+                                        <div className="flex flex-col items-center gap-1"><span>Reorder</span><div className="w-3 h-3 rounded-full bg-white/20 border border-white/40"></div></div>
                                         <div className="flex flex-col items-center gap-1"><span>Edit</span><div className="w-3 h-3 rounded-full bg-blue-500/20 border border-blue-400/40"></div></div>
                                         <div className="flex flex-col items-center gap-1"><span>Delete</span><div className="w-3 h-3 rounded-full bg-red-500/20 border border-red-400/40"></div></div>
                                         <div className="flex flex-col items-center gap-1"><span>Save</span><div className="w-3 h-3 rounded-full bg-emerald-500/20 border border-emerald-400/40"></div></div>
@@ -456,9 +451,9 @@
                                         <div className="flex flex-col items-center gap-1"><span className="font-bold">ADD</span><span className="text-[9px] text-white/40">Add new</span></div>
                                     </div>
                                 </div>
-                                <ListEditor title="Equipment List" listKey="equipment" items={equipmentOptions} newVal={newItem.equipment} setNewVal={v => setNewItem(p => ({ ...p, equipment: v }))} editing={editingList} setEditing={setEditingList} onAdd={v => addOption('equipment', v)} onEdit={(i, v) => editOption('equipment', i, v)} onRemove={i => removeOption('equipment', i)} onMoveUp={i => moveOption('equipment', i, 'up')} onMoveDown={i => moveOption('equipment', i, 'down')} onRequestDelete={(i, o) => setListDeleteModal({ list: 'equipment', idx: i, value: o, title: 'Equipment List' })} placeholder="Add equipment (e.g. Tripod)" />
-                                <ListEditor title="Vehicle Plates List" listKey="plat" items={platOptions} newVal={newItem.plat} setNewVal={v => setNewItem(p => ({ ...p, plat: v }))} editing={editingList} setEditing={setEditingList} onAdd={v => addOption('plat', v)} onEdit={(i, v) => editOption('plat', i, v)} onRemove={i => removeOption('plat', i)} onMoveUp={i => moveOption('plat', i, 'up')} onMoveDown={i => moveOption('plat', i, 'down')} onRequestDelete={(i, o) => setListDeleteModal({ list: 'plat', idx: i, value: o, title: 'Vehicle Plates List' })} placeholder="Add vehicle plate (e.g. WRD 1234)" />
-                                <ListEditor title="Approvers List" listKey="approver" items={approverOptions} newVal={newItem.approver} setNewVal={v => setNewItem(p => ({ ...p, approver: v }))} editing={editingList} setEditing={setEditingList} onAdd={v => addOption('approver', v)} onEdit={(i, v) => editOption('approver', i, v)} onRemove={i => removeOption('approver', i)} onMoveUp={i => moveOption('approver', i, 'up')} onMoveDown={i => moveOption('approver', i, 'down')} onRequestDelete={(i, o) => setListDeleteModal({ list: 'approver', idx: i, value: o, title: 'Approvers List' })} placeholder="Add approver name (e.g. Ahmad)" />
+                                <ListEditor title="Equipment List" listKey="equipment" items={equipmentOptions} newVal={newItem.equipment} setNewVal={v => setNewItem(p => ({ ...p, equipment: v }))} editing={editingList} setEditing={setEditingList} onAdd={v => addOption('equipment', v)} onEdit={(i, v) => editOption('equipment', i, v)} onRemove={i => removeOption('equipment', i)} onMoveUp={(i) => moveOption('equipment', i, i - 1)} onMoveDown={(i) => moveOption('equipment', i, i + 1)} onRequestDelete={(i, o) => setListDeleteModal({ list: 'equipment', idx: i, value: o, title: 'Equipment List' })} placeholder="Add equipment (e.g. Tripod)" />
+                                <ListEditor title="Vehicle Plates List" listKey="plat" items={platOptions} newVal={newItem.plat} setNewVal={v => setNewItem(p => ({ ...p, plat: v }))} editing={editingList} setEditing={setEditingList} onAdd={v => addOption('plat', v)} onEdit={(i, v) => editOption('plat', i, v)} onRemove={i => removeOption('plat', i)} onMoveUp={(i) => moveOption('plat', i, i - 1)} onMoveDown={(i) => moveOption('plat', i, i + 1)} onRequestDelete={(i, o) => setListDeleteModal({ list: 'plat', idx: i, value: o, title: 'Vehicle Plates List' })} placeholder="Add vehicle plate (e.g. WRD 1234)" />
+                                <ListEditor title="Approvers List" listKey="approver" items={approverOptions} newVal={newItem.approver} setNewVal={v => setNewItem(p => ({ ...p, approver: v }))} editing={editingList} setEditing={setEditingList} onAdd={v => addOption('approver', v)} onEdit={(i, v) => editOption('approver', i, v)} onRemove={i => removeOption('approver', i)} onMoveUp={(i) => moveOption('approver', i, i - 1)} onMoveDown={(i) => moveOption('approver', i, i + 1)} onRequestDelete={(i, o) => setListDeleteModal({ list: 'approver', idx: i, value: o, title: 'Approvers List' })} placeholder="Add approver name (e.g. Ahmad)" />
                                 <div className="glass-card bg-white/20 dark:bg-[#1e1e2a]/80 p-4 md:p-6 rounded-2xl md:rounded-3xl border border-white/30 dark:border-[#3a3a4a] border-l-4 border-l-purple-400/60">
                                     <h3 className="text-sm md:text-base font-black text-white mb-3">Change Passcode</h3>
                                     <div className="space-y-2 mb-3">
