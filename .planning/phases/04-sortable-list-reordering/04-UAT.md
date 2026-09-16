@@ -76,3 +76,4 @@ skipped: 0
   artifacts: []
   missing: []
   also_reported_on: [3, 4]
+  root_cause: "index.html lines 117-118 render ChevronUp/ChevronDown at size={14} with identical styling (bg-white/20 text-white/80) - no size/color/direction distinction and no tooltip on enabled buttons, so the affordance relies solely on tiny chevron orientation"
