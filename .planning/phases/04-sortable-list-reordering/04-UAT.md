@@ -69,7 +69,9 @@ skipped: 0
 
 - gap_id: G-04-2
   truth: "Settings reorder controls clearly distinguish Up from Down with friendly icons"
-  status: failed
+  status: resolved
+  resolved_by: 04-02-PLAN.md
+  resolved_at: 2026-09-17
   reason: "User reported: The user hard to know which ones is up and which one is down. Is a little up arrow and down arrow is okay to make it much friendly and easier for the user?"
   severity: minor
   test: 2
@@ -77,3 +79,4 @@ skipped: 0
   missing: []
   also_reported_on: [3, 4]
   root_cause: "index.html lines 117-118 render ChevronUp/ChevronDown at size={14} with identical styling (bg-white/20 text-white/80) - no size/color/direction distinction and no tooltip on enabled buttons, so the affordance relies solely on tiny chevron orientation"
+  fix_applied: "04-02: ChevronUp/ChevronDown size 14 -> ArrowUp/ArrowDown size 16 (directional glyphs), lines 117-118 only"
