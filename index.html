@@ -97,7 +97,7 @@
     <script type="text/babel">
         const { useState, useEffect, useMemo } = React;
 
-        const ListEditor = ({ title, listKey, items, newVal, setNewVal, editing, setEditing, onAdd, onEdit, onRemove, onRequestDelete, placeholder }) => {
+        const ListEditor = ({ title, listKey, items, newVal, setNewVal, editing, setEditing, onAdd, onEdit, onRemove, onMoveUp, onMoveDown, onRequestDelete, placeholder }) => {
             const isEditing = editing && editing.list === listKey;
             return (
                 <div className="glass-card bg-white/20 dark:bg-[#1e1e2a]/80 p-4 md:p-6 rounded-2xl md:rounded-3xl border border-white/30 dark:border-[#3a3a4a]">
@@ -114,6 +114,8 @@
                                 ) : (
                                     <>
                                         <span className="flex-1 text-sm text-white/80 truncate">{getEquipDisplay(o)}</span>
+                                        <button onClick={() => onMoveUp(i)} disabled={o === 'Other' || i === 0} title={o === 'Other' ? 'Cannot move Other' : 'Move up'} className={`p-2 rounded-lg transition-all border ${o === 'Other' || i === 0 ? 'bg-white/5 text-white/20 border-white/10 cursor-not-allowed' : 'bg-white/20 text-white hover:bg-white/30 border-white/30'}`}><Icon name="ChevronUp" size={14} /></button>
+                                        <button onClick={() => onMoveDown(i)} disabled={o === 'Other' || i >= items.length - 1} title={o === 'Other' ? 'Cannot move Other' : 'Move down'} className={`p-2 rounded-lg transition-all border ${o === 'Other' || i >= items.length - 1 ? 'bg-white/5 text-white/20 border-white/10 cursor-not-allowed' : 'bg-white/20 text-white hover:bg-white/30 border-white/30'}`}><Icon name="ChevronDown" size={14} /></button>
                                         <button onClick={() => setEditing({ list: listKey, idx: i, val: o })} disabled={o === 'Other'} title={o === 'Other' ? 'Cannot edit Other' : 'Edit'} className={`p-2 rounded-lg transition-all border ${o === 'Other' ? 'bg-white/5 text-white/20 border-white/10 cursor-not-allowed' : 'bg-blue-500/20 text-blue-300 hover:bg-blue-500/30 border-blue-400/30'}`}><Icon name="Pencil" size={14} /></button>
                                         <button onClick={() => onRequestDelete(i, o)} disabled={o === 'Other'} title={o === 'Other' ? 'Cannot delete Other' : 'Delete'} className={`p-2 rounded-lg transition-all border ${o === 'Other' ? 'bg-white/5 text-white/20 border-white/10 cursor-not-allowed' : 'bg-red-500/20 text-red-300 hover:bg-red-500/30 border-red-400/30'}`}><Icon name="Trash2" size={14} /></button>
                                     </>
@@ -241,7 +243,8 @@
                 const v = (value || '').trim(); if (!v) return;
                 const next = { equipment: equipmentOptions, plat: platOptions, approver: approverOptions };
                 if (next[list].includes(v)) { handleNotify("Already in list", "error"); return; }
-                next[list] = [...next[list], v];
+                const otherIdx = next[list].indexOf('Other');
+                next[list] = otherIdx >= 0 ? [...next[list].slice(0, otherIdx), v, ...next[list].slice(otherIdx)] : [...next[list], v];
                 saveOptions(next.plat, next.approver, next.equipment);
                 setNewItem(p => ({ ...p, [list]: '' }));
             };
@@ -256,6 +259,19 @@
                 const next = { equipment: equipmentOptions, plat: platOptions, approver: approverOptions };
                 if (next[list][idx] === 'Other') return;
                 next[list] = next[list].filter((_, i) => i !== idx);
+                saveOptions(next.plat, next.approver, next.equipment);
+            };
+            const moveOption = (list, idx, dir) => {
+                const next = { equipment: equipmentOptions, plat: platOptions, approver: approverOptions };
+                if (next[list][idx] === 'Other') return;
+                const toIdx = idx + (dir === 'up' ? -1 : 1);
+                const arr = next[list];
+                if (toIdx < 0 || toIdx >= arr.length) return;
+                const moved = arr.slice();
+                const tmp = moved[idx];
+                moved[idx] = moved[toIdx];
+                moved[toIdx] = tmp;
+                next[list] = moved;
                 saveOptions(next.plat, next.approver, next.equipment);
             };
             const confirmDelete = async () => {
