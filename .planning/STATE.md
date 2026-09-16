@@ -2,19 +2,19 @@
 gsd_state_version: 1.0
 milestone: v1.1
 milestone_name: Sortable Lists & Manager Styling
-current_phase: 4
-current_phase_name: Sortable List Reordering
-status: planning
-stopped_at: Phase 4 plan created (04-01-PLAN.md)
-last_updated: "2026-09-16T00:00:00.000Z"
-last_activity: 2026-09-15
-last_activity_desc: Roadmap created for v1.1 (Phases 4-5); Phase 4 plan created 2026-09-16
+current_phase: 04
+current_phase_name: sortable-list-reordering
+status: verifying
+stopped_at: Completed 04-01-PLAN.md
+last_updated: "2026-09-16T08:57:21.731Z"
+last_activity: 2026-09-16
+last_activity_desc: Phase 04 execution started
 progress:
   total_phases: 2
-  completed_phases: 0
+  completed_phases: 1
   total_plans: 1
-  completed_plans: 0
-  percent: 0
+  completed_plans: 1
+  percent: 50
 ---
 
 # Project State
@@ -24,16 +24,16 @@ progress:
 See: .planning/PROJECT.md (updated 2026-09-15)
 
 **Core value:** Accountable equipment handover — track who borrowed what, when, and whether it was returned, with an approval trail (approver name, passed status).
-**Current focus:** Sortable List Reordering (Phase 4)
+**Current focus:** Phase 04 — sortable-list-reordering
 
 ## Current Position
 
-Phase: 4 of 5 (Sortable List Reordering)
-Plan: 1 of 1 (04-01-PLAN.md — wave 1, 2 tasks)
-Status: Ready to execute
-Last activity: 2026-09-16 — Phase 4 plan created
+Phase: 04 (sortable-list-reordering) — EXECUTING
+Plan: 1 of 1
+Status: Phase complete — ready for verification
+Last activity: 2026-09-16 — Phase 04 execution started
 
-Progress: [░░░░░░░░░░] 0%
+Progress: [██████████] 100%
 
 ## Performance Metrics
 
@@ -59,6 +59,7 @@ Progress: [░░░░░░░░░░] 0%
 | Phase 02 P01 | 12min | 2 tasks | 1 files |
 | Phase 02-config-driven-passcode P02 | 6min | 3 tasks | 3 files |
 | Phase 03 P01 | 25min | 2 tasks | 1 files |
+| Phase 04-sortable-list-reordering P01 | 21 | 2 tasks | 1 files |
 
 ## Accumulated Context
 
@@ -70,6 +71,8 @@ Full log in PROJECT.md Key Decisions. Recent decisions affecting current work:
 - [Phase 4]: Reordering writes rearranged arrays through the existing `saveOptions()` → `doc('lists').set({...}, {merge:true})` path — no new state plumbing or storage schema
 - [Phase 4]: "Other" stays pinned last via the existing disable pattern (`disabled={o === 'Other'}`) extended to the new up/down controls
 - [Phase 5]: Target classes are lines 527-528 (cards) and 670-671 (modal) of index.html: swap `bg-emerald-500/80 text-white hover:bg-emerald-500` → `bg-emerald-500/20 text-emerald-300 hover:bg-emerald-500/30` (and red equivalents), matching the editor buttons' glass pattern (`bg-red-500/20 text-red-300 border-red-400/30`)
+- [Phase ?]: moveOption follows the plan/research (list, fromIdx, toIdx) signature with a destructuring swap on a copied array and no setState on option arrays (Firestore-echo)
+- [Phase ?]: Reorder buttons disabled-state matrix: i===0 (Up), o==='Other' (both), i>=items.length-1 (Down), items[i+1]==='Other' (Down)
 
 ### Pending Todos
 
@@ -92,9 +95,9 @@ Items acknowledged and deferred at milestone close on 2026-09-15:
 
 ## Session Continuity
 
-Last session: 2026-09-16T00:00:00.000Z
-Stopped at: Phase 4 plan created (04-01-PLAN.md)
-Resume file: .planning/phases/04-sortable-list-reordering/04-01-PLAN.md
+Last session: 2026-09-16T08:57:21.712Z
+Stopped at: Completed 04-01-PLAN.md
+Resume file: None
 
 ## Operator Next Steps
 

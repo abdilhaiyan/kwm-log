@@ -9,12 +9,12 @@ Requirements for milestone v1.1. Each maps to a roadmap phase.
 
 ### Sortable Lists
 
-- [ ] **SORT-01**: Manager can reorder equipment list items (up/down) in the Settings Equipment List card
-- [ ] **SORT-02**: Manager can reorder vehicle plates list items (up/down) in the Settings Vehicle Plates List card
-- [ ] **SORT-03**: Manager can reorder approvers list items (up/down) in the Settings Approvers List card
-- [ ] **SORT-04**: "Other" stays pinned as the last item in every list and cannot be moved
-- [ ] **SORT-05**: Reordered lists persist to Firestore and sync to the request form select, manager filter select, and detail views on all devices
-- [ ] **SORT-06**: Reordered lists survive a page reload and stay in the same order for every user
+- [x] **SORT-01**: Manager can reorder equipment list items (up/down) in the Settings Equipment List card
+- [x] **SORT-02**: Manager can reorder vehicle plates list items (up/down) in the Settings Vehicle Plates List card
+- [x] **SORT-03**: Manager can reorder approvers list items (up/down) in the Settings Approvers List card
+- [x] **SORT-04**: "Other" stays pinned as the last item in every list and cannot be moved
+- [x] **SORT-05**: Reordered lists persist to Firestore and sync to the request form select, manager filter select, and detail views on all devices
+- [x] **SORT-06**: Reordered lists survive a page reload and stay in the same order for every user
 
 ### Manager Styling
 
@@ -49,18 +49,19 @@ Which phases cover which requirements. Updated during roadmap creation.
 
 | Requirement | Phase | Status |
 |-------------|-------|--------|
-| SORT-01 | Phase 4 | Pending |
-| SORT-02 | Phase 4 | Pending |
-| SORT-03 | Phase 4 | Pending |
-| SORT-04 | Phase 4 | Pending |
-| SORT-05 | Phase 4 | Pending |
-| SORT-06 | Phase 4 | Pending |
+| SORT-01 | Phase 4 | Complete |
+| SORT-02 | Phase 4 | Complete |
+| SORT-03 | Phase 4 | Complete |
+| SORT-04 | Phase 4 | Complete |
+| SORT-05 | Phase 4 | Complete |
+| SORT-06 | Phase 4 | Complete |
 | UI-01 | Phase 5 | Pending |
 | UI-02 | Phase 5 | Pending |
 | UI-03 | Phase 5 | Pending |
 | UI-04 | Phase 5 | Pending |
 
 **Coverage:**
+
 - v1 requirements: 10 total
 - Mapped to phases: 10
 - Unmapped: 0 ✓
