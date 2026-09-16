@@ -38,9 +38,11 @@
   4. After a page reload — and on a second phone or computer — every list renders in the saved order for all users (order persisted via Firestore).
   5. Reordered order applies live to every surface rendering the list (request form select, manager filter select, detail view selects) without an app restart.
 
-**Plans**: 1/1 plans executed
+**Plans**: 2/2 plans executed
 
 Plans:
+
+- [x] 04-02-PLAN.md
 
 - [x] 04-01-PLAN.md — Sortable list reordering (moveOption with bounds guard, ListEditor Up/Down UI, addOption insert-before-Other, createIcons refresh)
 
@@ -71,5 +73,5 @@ Phases execute in numeric order: 4 → 5
 | 1. Multi-Block Decomposition | v1.0 | 3/3 | Complete | 2026-09-13 |
 | 2. Config-Driven Passcode | v1.0 | 2/2 | Complete | 2026-09-14 |
 | 3. Configurable Plat & Approver Dropdowns | v1.0 | 1/1 | Complete | 2026-09-14 |
-| 4. Sortable List Reordering | v1.1 | 1/1 | In Progress|  |
+| 4. Sortable List Reordering | v1.1 | 2/2 | In Progress|  |
 | 5. Manager Glassmorphic Styling | v1.1 | 0/TBD | Not started | - |

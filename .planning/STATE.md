@@ -5,15 +5,15 @@ milestone_name: Sortable Lists & Manager Styling
 current_phase: 04
 current_phase_name: sortable-list-reordering
 status: verifying
-stopped_at: Completed 04-01-PLAN.md
-last_updated: "2026-09-16T08:57:21.731Z"
+stopped_at: Completed 04-02-PLAN.md (G-04-2 arrow affordance)
+last_updated: "2026-09-16T23:34:21.054Z"
 last_activity: 2026-09-16
 last_activity_desc: Phase 04 execution started
 progress:
   total_phases: 2
   completed_phases: 1
-  total_plans: 1
-  completed_plans: 1
+  total_plans: 2
+  completed_plans: 2
   percent: 50
 ---
 
@@ -60,6 +60,7 @@ Progress: [██████████] 100%
 | Phase 02-config-driven-passcode P02 | 6min | 3 tasks | 3 files |
 | Phase 03 P01 | 25min | 2 tasks | 1 files |
 | Phase 04-sortable-list-reordering P01 | 21 | 2 tasks | 1 files |
+| Phase 04-sortable-list-reordering P02 | 5min | 1 tasks | 1 files |
 
 ## Accumulated Context
 
@@ -73,6 +74,7 @@ Full log in PROJECT.md Key Decisions. Recent decisions affecting current work:
 - [Phase 5]: Target classes are lines 527-528 (cards) and 670-671 (modal) of index.html: swap `bg-emerald-500/80 text-white hover:bg-emerald-500` → `bg-emerald-500/20 text-emerald-300 hover:bg-emerald-500/30` (and red equivalents), matching the editor buttons' glass pattern (`bg-red-500/20 text-red-300 border-red-400/30`)
 - [Phase ?]: moveOption follows the plan/research (list, fromIdx, toIdx) signature with a destructuring swap on a copied array and no setState on option arrays (Firestore-echo)
 - [Phase ?]: Reorder buttons disabled-state matrix: i===0 (Up), o==='Other' (both), i>=items.length-1 (Down), items[i+1]==='Other' (Down)
+- [Phase ?]: G-04-2 closed as an icon-detail redesign in place: swap ChevronUp/ChevronDown size 14 for ArrowUp/ArrowDown size 16 on index.html lines 117-118 only, keeping neutral glass (single-neutral-dot legend valid; color-blind-safe)
 
 ### Pending Todos
 
@@ -95,8 +97,8 @@ Items acknowledged and deferred at milestone close on 2026-09-15:
 
 ## Session Continuity
 
-Last session: 2026-09-16T08:57:21.712Z
-Stopped at: Completed 04-01-PLAN.md
+Last session: 2026-09-16T23:34:21.036Z
+Stopped at: Completed 04-02-PLAN.md (G-04-2 arrow affordance)
 Resume file: None
 
 ## Operator Next Steps
