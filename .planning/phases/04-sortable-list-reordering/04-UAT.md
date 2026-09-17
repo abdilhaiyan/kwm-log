@@ -3,7 +3,7 @@ status: complete
 phase: 04-sortable-list-reordering
 source: [04-VERIFICATION.md]
 started: 2026-09-16T17:35:00Z
-updated: 2026-09-16T18:05:00Z
+updated: 2026-09-17
 
 ## Current Test
 
@@ -57,10 +57,14 @@ result: pass
 expected: Open Settings → DevTools console → evaluate the matrix assertion from PLAN Task 2 verify: icons === 0, otherUp >= 3, otherDown >= 3, otherUpDisabled === true, otherDownDisabled === true, firstUpDisabled === true, bottomDownDisabled === true.
 result: pass
 
+### 11. Post-Fix Re-verification (9bfede4, 2026-09-17)
+expected: After the Icon rewrite + settings-button restyle (commit 9bfede4), re-run the interactive row operations against live Firestore — all reversible: (a) reorder Down then back Up on an Equipment row (order restored), (b) Edit → save a temporary label then restore it, (c) ADD a temp item via the "+" circle, (d) delete the temp item via the list-delete modal (passcode 1234 → CONFIRM DELETE), (e) confirm zero residue in every consuming select and the list returns to its exact pre-test state.
+result: pass
+
 ## Summary
 
-total: 10
-passed: 7
+total: 11
+passed: 8
 issues: 3
 pending: 0
 skipped: 0
@@ -70,7 +74,7 @@ skipped: 0
 - gap_id: G-04-2
   truth: "Settings reorder controls clearly distinguish Up from Down with friendly icons"
   status: resolved
-  resolved_by: 04-02-PLAN.md
+  resolved_by: 04-02-PLAN.md (04-02-SUMMARY.md correction: deployed fix is 9bfede4)
   resolved_at: 2026-09-17
   reason: "User reported: The user hard to know which ones is up and which one is down. Is a little up arrow and down arrow is okay to make it much friendly and easier for the user?"
   severity: minor
@@ -78,5 +82,5 @@ skipped: 0
   artifacts: []
   missing: []
   also_reported_on: [3, 4]
-  root_cause: "index.html lines 117-118 render ChevronUp/ChevronDown at size={14} with identical styling (bg-white/20 text-white/80) - no size/color/direction distinction and no tooltip on enabled buttons, so the affordance relies solely on tiny chevron orientation"
-  fix_applied: "04-02: ChevronUp/ChevronDown size 14 -> ArrowUp/ArrowDown size 16 (directional glyphs), lines 117-118 only"
+  root_cause: "Initial diagnosis (036594f): index.html lines 117-118 render ChevronUp/ChevronDown at size={14} with identical styling (bg-white/20 text-white/80) - no size/color/direction distinction and no tooltip on enabled buttons, so the affordance relies solely on tiny chevron orientation. DEEPER ROOT CAUSE (refined at 9bfede4, confirmed live after a full reload): the Icon component called name.toLowerCase() when setting the data-lucide attribute, producing unresolvable keys like 'arrowup'/'chevronup'; Lucide only resolves PascalCase or kebab-case names, so lucide.createIcons() could never materialize those icon nodes - rendered icons were window-blind/blank regardless of glyph name, and createIcons() imperatively replacing React-owned <i> nodes with <svg> also broke React reconciliation (edit-mode Save/Cancel would show stale arrow glyphs)."
+  fix_applied: "04-02 (e67a7cc): ChevronUp/ChevronDown size 14 -> ArrowUp/ArrowDown size 16, lines 117-118 only - NECESSARY but NOT sufficient. Real fix (9bfede4): rewrote the Icon component to render a React-owned <svg> directly from lucide.icons[name] node data (flat [[tag, attrs], ...] pairs) with a kebab-case fallback for unknown names; createIcons() call sites remain but are now no-ops; the same commit applied the user-approved restyle (24px circular row buttons, Save=Check/Cancel=X, edit/delete glyphs, ADD+= circle, compact inputs, legend circle). Re-verified live in test 11."

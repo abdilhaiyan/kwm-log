@@ -15,7 +15,8 @@ affects: [end-of-phase UAT /gsd-verify-work 04 (tests 2/3/4 for G-04-2), any fut
 actuals:
   tokens: 509    # chars/4 over the realized diff (2038 chars: 1017 added + 1021 deleted, both full reorder-button lines in index.html)
   tasks: 1
-  commits: 1
+  commits: 1        # e67a7cc (this plan run)
+  commits_note: "Deployed icon fix + restyle shipped separately in 9bfede4 — see Post-Summary Correction section"
 
 tech-stack:
   added: []
@@ -55,9 +56,12 @@ coverage:
   - id: D3
     description: "Arrow glyphs materialize in the live Settings DOM (svg.lucide-arrow-up / -down >= 6 each, bare i[data-lucide] == 0) and read as up/down at a glance on a phone-width viewport"
     requirement: SORT-01
-    verification: []
+    verification:
+      - kind: other
+        ref: "FINAL STATE (9bfede4): arrows render as React-owned svg directly in the DOM (no createIcons dependency); live UAT test 11 re-verified reorder/edit/add/delete round-trips — see Post-Summary Correction"
+        status: pass
     human_judgment: true
-    rationale: "Requires the served app (python -m http.server 8080), an anonymous sign-in, the manager passcode, and live Firestore list data — browser/DevTools interaction belongs to the end-of-phase human verify (/gsd-verify-work 04, resuming UAT tests 2/3/4) per the plan's human_verify_mode: end-of-phase and verification section."
+    rationale: "Requires the served app (python -m http.server 8080), an anonymous sign-in, the manager passcode, and live Firestore list data — browser/DevTools interaction belongs to the end-of-phase human verify (/gsd-verify-work 04, resuming UAT tests 2/3/4) per the plan's human_verify_mode: end-of-phase and verification section. NOTE: this plan's bare swap alone was insufficient — see Post-Summary Correction."
 
 duration: 5min
 completed: 2026-09-17
@@ -102,6 +106,15 @@ None — plan executed exactly as written.
 ## Issues Encountered
 
 None. First edit attempt failed only because of a typo in my own `oldString` (dropped the leading `<`); the corrected edit applied cleanly and the diff is exactly two lines.
+
+## Post-Summary Correction (2026-09-17, commit `9bfede4`)
+
+**The two-token swap above was necessary but NOT sufficient — this summary's Sweep claims did not survive live verification.** The "Deviations: None / Issues: None" statements above are superseded by what was found immediately afterward:
+
+- **Real root cause discovered during verification (confirmed live after a full reload):** the `Icon` component lowered the icon name when writing the lucide attribute (`name.toLowerCase()`), producing `data-lucide="arrowup"` / `"chevronup"`. Lucide only resolves **PascalCase or kebab-case** names, so `lucide.createIcons()` could never materialize those nodes — the new arrows (and the old chevrons) were **window-blind/blank regardless of glyph name**. `createIcons()` also imperatively replaced React-owned `<i>` nodes with `<svg>`, breaking React reconciliation — edit-mode Save/Cancel rendered stale arrow glyphs.
+- **Deployed fix (`9bfede4`):** rewrote the `Icon` component to render a React-owned `<svg>` directly from `lucide.icons[name]` node data (flat `[[tag, attrs], ...]` pairs; verified `lucide.createElement` returns `{}`), with a safe kebab-case fallback (`name.replace(/([a-z])([A-Z])/g, '$1-$2').toLowerCase()`). The three `setTimeout(() => lucide.createIcons(), 100)` sites remain but are now no-ops. This fixed icon rendering, the reconciliation/stale-glyph defect, and the edit-row misalignment in one change.
+- **User-approved restyle bundled in the same commit:** all ListEditor row buttons became `w-6 h-6 rounded-full` (24px circles, `gap-1.5`), reorder = ArrowUp/ArrowDown size 12, Save = Check 12 (emerald) / Cancel = X 12 (orange), Edit = Pencil 12 (blue) / Delete = Trash2 12 (red) glyphs restored, ADD = "+" circle (Plus 12), compact `px-2 py-0.5` edit/add inputs, and the legend's Add entry became a circle to match the other dots.
+- **Re-verified live in UAT test 11:** reorder Down→Up (order restored), Edit→save→restore, ADD temp item, delete it via the passcode-confirmed list-delete modal, and the Form equipment dropdown returned exactly to `['DJI Osmo Action 6','Vehicles','Laptop','test','Other']` with zero residue.
 
 ## User Setup Required
 

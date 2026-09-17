@@ -75,6 +75,7 @@ Full log in PROJECT.md Key Decisions. Recent decisions affecting current work:
 - [Phase ?]: moveOption follows the plan/research (list, fromIdx, toIdx) signature with a destructuring swap on a copied array and no setState on option arrays (Firestore-echo)
 - [Phase ?]: Reorder buttons disabled-state matrix: i===0 (Up), o==='Other' (both), i>=items.length-1 (Down), items[i+1]==='Other' (Down)
 - [Phase ?]: G-04-2 closed as an icon-detail redesign in place: swap ChevronUp/ChevronDown size 14 for ArrowUp/ArrowDown size 16 on index.html lines 117-118 only, keeping neutral glass (single-neutral-dot legend valid; color-blind-safe)
+- [Phase 4, 2026-09-17, 9bfede4]: G-04-2 ACTUAL root cause + fix — the 04-02 glyph swap was insufficient: the Icon component's name.toLowerCase() produced unresolvable data-lucide keys (arrowup/chevronup), so createIcons() never materialized icons (window-blind); createIcons() replacing React <i> with <svg> also broke reconciliation (stale Save/Cancel arrows). Fix: Icon now renders a React-owned <svg> directly from lucide.icons[name] node data (kebab fallback); createIcons sites remain as no-ops. Same commit bundled user-approved restyle: 24px circular row buttons, Save=Check/Cancel=X, edit/delete glyphs, ADD="+" circle, compact inputs, legend circle.
 
 ### Pending Todos
 
