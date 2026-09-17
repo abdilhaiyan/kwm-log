@@ -90,8 +90,16 @@
     </script>
     <script type="text/babel">
         const Icon = ({ name, size = 20, className = "" }) => {
-            const LucideIcon = lucide.icons[name];
-            return LucideIcon ? <i data-lucide={name.toLowerCase()} className={className} style={{width: size, height: size}}></i> : null;
+            const node = (typeof lucide !== 'undefined' && lucide.icons) ? lucide.icons[name] : null;
+            if (!node) {
+                return <i data-lucide={name.replace(/([a-z])([A-Z])/g, '$1-$2').toLowerCase()} className={className} style={{ width: size, height: size }}></i>;
+            }
+            const parts = [];
+            for (let i = 0; i < node.length; i++) {
+                const [tag, attrs] = node[i];
+                parts.push(React.createElement(tag, { key: i, ...attrs }));
+            }
+            return <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={2} strokeLinecap="round" strokeLinejoin="round" width={size} height={size} aria-hidden="true" className={className}>{parts}</svg>;
         };
     </script>
     <script type="text/babel">
@@ -104,28 +112,28 @@
                     <h3 className="text-sm md:text-base font-black text-white mb-3">{title}</h3>
                     <div className="space-y-2 mb-3">
                         {items.map((o, i) => (
-                            <div key={i} className="flex items-center gap-2">
+                            <div key={i} className="flex items-center gap-1.5">
                                 {isEditing && editing.idx === i ? (
                                     <>
-                                        <input autoFocus className={INPUT_CLS_SM + " flex-1"} value={editing.val} onChange={e => setEditing({ ...editing, val: e.target.value })} onKeyDown={e => { if (e.key === 'Enter') onEdit(i, editing.val); }} />
-                                        <button onClick={() => onEdit(i, editing.val)} title="Save" className="p-2 rounded-lg bg-emerald-500/20 text-emerald-300 hover:bg-emerald-500/30 transition-all border border-emerald-400/30"><Icon name="Check" size={14} /></button>
-                                        <button onClick={() => setEditing(null)} title="Cancel" className="p-2 rounded-lg bg-orange-500/20 text-orange-300 hover:bg-orange-500/30 transition-all border border-orange-400/30"><Icon name="X" size={14} /></button>
+                                        <input autoFocus className="flex-1 w-full px-2 py-0.5 bg-white/30 dark:bg-[#252535]/60 backdrop-blur-sm rounded-lg outline-none border border-white/40 dark:border-[#3a3a4a] text-white placeholder-white/60 text-sm focus:ring-2 focus:ring-white/50 transition-all" value={editing.val} onChange={e => setEditing({ ...editing, val: e.target.value })} onKeyDown={e => { if (e.key === 'Enter') onEdit(i, editing.val); }} />
+                                        <button onClick={() => onEdit(i, editing.val)} title="Save" className="w-6 h-6 rounded-full bg-emerald-500/20 text-emerald-300 hover:bg-emerald-500/30 transition-all border border-emerald-400/30 flex items-center justify-center"><Icon name="Check" size={12} /></button>
+                                        <button onClick={() => setEditing(null)} title="Cancel" className="w-6 h-6 rounded-full bg-orange-500/20 text-orange-300 hover:bg-orange-500/30 transition-all border border-orange-400/30 flex items-center justify-center"><Icon name="X" size={12} /></button>
                                     </>
                                 ) : (
                                     <>
                                         <span className="flex-1 text-sm text-white/80 truncate">{getEquipDisplay(o)}</span>
-                                        <button onClick={() => onMoveUp(i)} disabled={i === 0 || o === 'Other'} title={o === 'Other' ? 'Cannot reorder Other' : i === 0 ? 'Already at top' : 'Move up'} className={`p-2 rounded-lg transition-all border ${i === 0 || o === 'Other' ? 'bg-white/5 text-white/20 border-white/10 cursor-not-allowed' : 'bg-white/20 text-white/80 hover:bg-white/30 border border-white/30'}`}><Icon name="ArrowUp" size={16} /></button>
-                                        <button onClick={() => onMoveDown(i)} disabled={o === 'Other' || i >= items.length - 1 || items[i+1] === 'Other'} title={o === 'Other' ? 'Cannot reorder Other' : i >= items.length - 1 ? 'Already at bottom' : 'Move down'} className={`p-2 rounded-lg transition-all border ${o === 'Other' || i >= items.length - 1 || items[i+1] === 'Other' ? 'bg-white/5 text-white/20 border-white/10 cursor-not-allowed' : 'bg-white/20 text-white/80 hover:bg-white/30 border border-white/30'}`}><Icon name="ArrowDown" size={16} /></button>
-                                        <button onClick={() => setEditing({ list: listKey, idx: i, val: o })} disabled={o === 'Other'} title={o === 'Other' ? 'Cannot edit Other' : 'Edit'} className={`p-2 rounded-lg transition-all border ${o === 'Other' ? 'bg-white/5 text-white/20 border-white/10 cursor-not-allowed' : 'bg-blue-500/20 text-blue-300 hover:bg-blue-500/30 border-blue-400/30'}`}><Icon name="Pencil" size={14} /></button>
-                                        <button onClick={() => onRequestDelete(i, o)} disabled={o === 'Other'} title={o === 'Other' ? 'Cannot delete Other' : 'Delete'} className={`p-2 rounded-lg transition-all border ${o === 'Other' ? 'bg-white/5 text-white/20 border-white/10 cursor-not-allowed' : 'bg-red-500/20 text-red-300 hover:bg-red-500/30 border-red-400/30'}`}><Icon name="Trash2" size={14} /></button>
+                                        <button onClick={() => onMoveUp(i)} disabled={i === 0 || o === 'Other'} title={o === 'Other' ? 'Cannot reorder Other' : i === 0 ? 'Already at top' : 'Move up'} className={`w-6 h-6 rounded-full transition-all border flex items-center justify-center ${i === 0 || o === 'Other' ? 'bg-white/5 text-white/20 border-white/10 cursor-not-allowed' : 'bg-white/20 text-white/80 hover:bg-white/30 border border-white/30'}`}><Icon name="ArrowUp" size={12} /></button>
+                                        <button onClick={() => onMoveDown(i)} disabled={o === 'Other' || i >= items.length - 1 || items[i+1] === 'Other'} title={o === 'Other' ? 'Cannot reorder Other' : i >= items.length - 1 ? 'Already at bottom' : 'Move down'} className={`w-6 h-6 rounded-full transition-all border flex items-center justify-center ${o === 'Other' || i >= items.length - 1 || items[i+1] === 'Other' ? 'bg-white/5 text-white/20 border-white/10 cursor-not-allowed' : 'bg-white/20 text-white/80 hover:bg-white/30 border border-white/30'}`}><Icon name="ArrowDown" size={12} /></button>
+                                        <button onClick={() => setEditing({ list: listKey, idx: i, val: o })} disabled={o === 'Other'} title={o === 'Other' ? 'Cannot edit Other' : 'Edit'} className={`w-6 h-6 rounded-full transition-all border flex items-center justify-center ${o === 'Other' ? 'bg-white/5 text-white/20 border-white/10 cursor-not-allowed' : 'bg-blue-500/20 text-blue-300 hover:bg-blue-500/30 border-blue-400/30'}`}><Icon name="Pencil" size={12} /></button>
+                                        <button onClick={() => onRequestDelete(i, o)} disabled={o === 'Other'} title={o === 'Other' ? 'Cannot delete Other' : 'Delete'} className={`w-6 h-6 rounded-full transition-all border flex items-center justify-center ${o === 'Other' ? 'bg-white/5 text-white/20 border-white/10 cursor-not-allowed' : 'bg-red-500/20 text-red-300 hover:bg-red-500/30 border-red-400/30'}`}><Icon name="Trash2" size={12} /></button>
                                     </>
                                 )}
                             </div>
                         ))}
                     </div>
                     <div className="flex gap-2">
-                        <input placeholder={placeholder} className={INPUT_CLS_SM + " flex-1"} value={newVal} onChange={e => setNewVal(e.target.value)} onKeyDown={e => { if (e.key === 'Enter') onAdd(newVal); }} />
-                        <button onClick={() => onAdd(newVal)} className="px-4 py-2 rounded-xl bg-white/20 text-white text-xs font-bold hover:bg-white/30 transition-all border border-white/30">ADD</button>
+                        <input placeholder={placeholder} className="flex-1 w-full px-2 py-0.5 bg-white/30 dark:bg-[#252535]/60 backdrop-blur-sm rounded-lg outline-none border border-white/40 dark:border-[#3a3a4a] text-white placeholder-white/60 text-sm focus:ring-2 focus:ring-white/50 transition-all" value={newVal} onChange={e => setNewVal(e.target.value)} onKeyDown={e => { if (e.key === 'Enter') onAdd(newVal); }} />
+                        <button onClick={() => onAdd(newVal)} title="Add" className="w-6 h-6 rounded-full bg-white/20 text-white hover:bg-white/30 transition-all border border-white/30 flex items-center justify-center"><Icon name="Plus" size={12} /></button>
                     </div>
                 </div>
             );
@@ -448,7 +456,7 @@
                                         <div className="flex flex-col items-center gap-1"><span>Delete</span><div className="w-3 h-3 rounded-full bg-red-500/20 border border-red-400/40"></div></div>
                                         <div className="flex flex-col items-center gap-1"><span>Save</span><div className="w-3 h-3 rounded-full bg-emerald-500/20 border border-emerald-400/40"></div></div>
                                         <div className="flex flex-col items-center gap-1"><span>Cancel</span><div className="w-3 h-3 rounded-full bg-orange-500/20 border border-orange-400/40"></div></div>
-                                        <div className="flex flex-col items-center gap-1"><span className="font-bold">ADD</span><span className="text-[9px] text-white/40">Add new</span></div>
+                                        <div className="flex flex-col items-center gap-1"><span>Add</span><div className="w-3 h-3 rounded-full bg-white/20 border border-white/40 flex items-center justify-center"><Icon name="Plus" size={8} /></div></div>
                                     </div>
                                 </div>
                                 <ListEditor title="Equipment List" listKey="equipment" items={equipmentOptions} newVal={newItem.equipment} setNewVal={v => setNewItem(p => ({ ...p, equipment: v }))} editing={editingList} setEditing={setEditingList} onAdd={v => addOption('equipment', v)} onEdit={(i, v) => editOption('equipment', i, v)} onRemove={i => removeOption('equipment', i)} onMoveUp={(i) => moveOption('equipment', i, i - 1)} onMoveDown={(i) => moveOption('equipment', i, i + 1)} onRequestDelete={(i, o) => setListDeleteModal({ list: 'equipment', idx: i, value: o, title: 'Equipment List' })} placeholder="Add equipment (e.g. Tripod)" />
