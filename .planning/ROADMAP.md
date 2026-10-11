@@ -61,6 +61,9 @@ Plans:
   4. With the new styling, the manager can still approve (recording approver name/date) and reject requests from both the cards and the modal exactly as before — only the button appearance changed.
 
 **Plans**: TBD
+
+- [x] 05-01-PLAN.md
+
 **UI hint**: yes
 
 ## Progress
@@ -74,4 +77,4 @@ Phases execute in numeric order: 4 → 5
 | 2. Config-Driven Passcode | v1.0 | 2/2 | Complete | 2026-09-14 |
 | 3. Configurable Plat & Approver Dropdowns | v1.0 | 1/1 | Complete | 2026-09-14 |
 | 4. Sortable List Reordering | v1.1 | 2/2 | In Progress|  |
-| 5. Manager Glassmorphic Styling | v1.1 | 0/TBD | Not started | - |
+| 5. Manager Glassmorphic Styling | v1.1 | 1/1 | In Progress|  |
