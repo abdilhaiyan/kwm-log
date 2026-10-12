@@ -80,7 +80,9 @@ Plans:
   3. Borrower can mark item as returned from their own view with automatic recording of date and time.
   4. Request time field is omitted from the vehicle borrow section, relying on system auto-timestamping.
 
-**Plans**: TBD
+**Plans**: 1/1 plan
+
+- [ ] 06-01-PLAN.md — Form tweaks, vehicle fuel bar, borrower return flow, and request time omission
 
 **UI hint**: yes
 
@@ -96,4 +98,4 @@ Phases execute in numeric order: 4 → 5
 | 3. Configurable Plat & Approver Dropdowns | v1.0 | 1/1 | Complete | 2026-09-14 |
 | 4. Sortable List Reordering | v1.1 | 2/2 | Complete |  |
 | 5. Manager Glassmorphic Styling | v1.1 | 1/1 | Complete |  |
-| 6. Form Tweaks and Borrower Return Flow | v1.1 | 0/TBD | Not started |  |
+| 6. Form Tweaks and Borrower Return Flow | v1.1 | 1/1 | In progress |  |
