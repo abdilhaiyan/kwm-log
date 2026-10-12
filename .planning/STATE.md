@@ -2,14 +2,14 @@
 gsd_state_version: "1.0"
 milestone: v1.1
 milestone_name: Sortable Lists & Manager Styling
-current_phase: 04
-current_phase_name: sortable-list-reordering
-status: verifying
-stopped_at: Completed 05-01-PLAN.md
-last_updated: "2026-10-11T06:25:28.657Z"
-last_activity: 2026-09-16
-last_activity_desc: Phase 04 execution started
-state_head: b3bb8411103af0f5faa58c9d7e239d823bef70b8
+current_phase: 06
+current_phase_name: form-tweaks-and-borrower-return-flow
+status: planning
+stopped_at: Phase 6 added to roadmap
+last_updated: "2026-10-12T00:00:00.000Z"
+last_activity: 2026-10-12
+last_activity_desc: Phase 06 planning started
+state_head: 259834d4bdfa48c7f5d584670096565ab267807f
 progress:
   total_phases: 2
   completed_phases: 3
@@ -32,7 +32,7 @@ See: .planning/PROJECT.md (updated 2026-09-15)
 Phase: 04 (sortable-list-reordering) — EXECUTING
 Plan: 1 of 1
 Status: Phase complete — ready for verification
-Last activity: 2026-09-16 — Phase 04 execution started
+Last activity: 2026-10-11 — Phase 05 complete — milestone v1.1 ready for close
 
 Progress: [██████████] 100%
 
@@ -63,6 +63,7 @@ Progress: [██████████] 100%
 | Phase 04-sortable-list-reordering P01 | 21 | 2 tasks | 1 files |
 | Phase 04-sortable-list-reordering P02 | 5min | 1 tasks | 1 files |
 | Phase 05 P01 | 7 | 2 tasks | 1 files |
+| Phase 5 P1 | 7min | 2 tasks | 1 files |
 
 ## Accumulated Context
 

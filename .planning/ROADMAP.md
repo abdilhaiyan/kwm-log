@@ -3,7 +3,7 @@
 ## Milestones
 
 - ✅ **v1.0 MVP** — Phases 1-3 (shipped 2026-09-15)
-- 🚧 **v1.1 Sortable Lists & Manager Styling** — Phases 4-5 (in progress)
+- 🚧 **v1.1 Sortable Lists & Manager Styling** — Phases 4-6 (in progress)
 
 ## Phases
 
@@ -22,6 +22,8 @@
 
 - [ ] **Phase 4: Sortable List Reordering** - Up/down reorder controls in all three Settings list cards; "Other" pinned last; order persists via Firestore and syncs to every list surface
 - [ ] **Phase 5: Manager Glassmorphic Styling** - Approve/Reject buttons restyled to the translucent glass theme in manager request cards and the detail modal
+
+- [ ] **Phase 6: Form Tweaks and Borrower Return Flow** - Implement form uppercase placeholders, revert vehicle fuel bar visibility, move mark returned to borrower form, and omit manual request time for vehicles.
 
 ## Phase Details
 
@@ -66,6 +68,22 @@ Plans:
 
 **UI hint**: yes
 
+### Phase 6: Form Tweaks and Borrower Return Flow
+
+**Goal**: Implement form uppercase placeholders, revert vehicle fuel bar visibility, move mark returned to borrower form, and omit manual request time for vehicles.
+**Depends on**: Phase 5 (execution order)
+**Requirements**: FORM-01, FORM-02, FORM-03, FORM-04
+**Success Criteria** (what must be TRUE):
+
+  1. Placeholder form fields for "Requested By" and "Purpose of use" are in ALL CAPS.
+  2. Vehicle option correctly renders the fuel level status bar (reverted functionality).
+  3. Borrower can mark item as returned from their own view with automatic recording of date and time.
+  4. Request time field is omitted from the vehicle borrow section, relying on system auto-timestamping.
+
+**Plans**: TBD
+
+**UI hint**: yes
+
 ## Progress
 
 **Execution Order:**
@@ -76,5 +94,6 @@ Phases execute in numeric order: 4 → 5
 | 1. Multi-Block Decomposition | v1.0 | 3/3 | Complete | 2026-09-13 |
 | 2. Config-Driven Passcode | v1.0 | 2/2 | Complete | 2026-09-14 |
 | 3. Configurable Plat & Approver Dropdowns | v1.0 | 1/1 | Complete | 2026-09-14 |
-| 4. Sortable List Reordering | v1.1 | 2/2 | In Progress|  |
-| 5. Manager Glassmorphic Styling | v1.1 | 1/1 | In Progress|  |
+| 4. Sortable List Reordering | v1.1 | 2/2 | Complete |  |
+| 5. Manager Glassmorphic Styling | v1.1 | 1/1 | Complete |  |
+| 6. Form Tweaks and Borrower Return Flow | v1.1 | 0/TBD | Not started |  |

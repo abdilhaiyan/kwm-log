@@ -23,6 +23,13 @@ Requirements for milestone v1.1. Each maps to a roadmap phase.
 - [x] **UI-03**: Approve button in the request detail modal uses the translucent glassmorphic theme
 - [x] **UI-04**: Reject button in the request detail modal uses the translucent glassmorphic theme
 
+### Form Tweaks & Borrower Return Flow
+
+- [ ] **FORM-01**: Placeholders for 'Requested By' and 'Purpose of use' form inputs are in ALL CAPS
+- [ ] **FORM-02**: Vehicles equipment option renders the fuel level status bar selector
+- [ ] **FORM-03**: Mark Returned feature is moved/added to borrower status view so borrowers can mark items returned to company with auto date & time
+- [ ] **FORM-04**: Manual request time input is omitted from the vehicle borrow form section (captured automatically by system)
+
 ## v2 Requirements
 
 Deferred to a future release. Tracked but not in the current roadmap.
@@ -59,11 +66,15 @@ Which phases cover which requirements. Updated during roadmap creation.
 | UI-02 | Phase 5 | Complete |
 | UI-03 | Phase 5 | Complete |
 | UI-04 | Phase 5 | Complete |
+| FORM-01 | Phase 6 | Pending |
+| FORM-02 | Phase 6 | Pending |
+| FORM-03 | Phase 6 | Pending |
+| FORM-04 | Phase 6 | Pending |
 
 **Coverage:**
 
-- v1 requirements: 10 total
-- Mapped to phases: 10
+- v1 requirements: 14 total
+- Mapped to phases: 14
 - Unmapped: 0 ✓
 
 ---
