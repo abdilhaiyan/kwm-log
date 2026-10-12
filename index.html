@@ -359,7 +359,7 @@
                 const eq = formData.cameraModel;
                 return (
                     <>
-                        <input required placeholder="Requested By" className={INPUT_CLS} value={formData.borrowerName} onChange={e => updateForm('borrowerName', e.target.value)} />
+                        <input required placeholder="REQUESTED BY" className={INPUT_CLS} value={formData.borrowerName} onChange={e => updateForm('borrowerName', e.target.value)} />
                         {eq === 'Other' && <input required placeholder="Equipment name (e.g. Tripod, Drone, Laptop)" className={INPUT_CLS} value={formData.customEquipment} onChange={e => updateForm('customEquipment', e.target.value)} />}
                         <select className={SELECT_CLS} value={formData.cameraModel} onChange={e => updateForm('cameraModel', e.target.value)}>
                             {equipmentOptions.map(o => <option key={o} value={o}>{getEquipDisplay(o)}</option>)}
@@ -373,18 +373,10 @@
                             {formData.cameraModel !== 'Car' && <input required type="email" placeholder="Email" inputMode="email" className={INPUT_CLS} value={formData.borrowerEmail} onChange={e => updateForm('borrowerEmail', e.target.value)} />}
                             <input required type="tel" placeholder="Phone" inputMode="tel" className={INPUT_CLS} value={formData.borrowerPhone} onChange={e => updateForm('borrowerPhone', e.target.value)} />
                         </div>
-                        <textarea required placeholder="Purpose of use..." className="w-full p-3 md:p-4 bg-white/30 dark:bg-[#252535]/60 backdrop-blur-sm rounded-xl h-20 md:h-28 border border-white/40 dark:border-[#3a3a4a] text-white placeholder-white/60 focus:ring-2 focus:ring-white/50 transition-all resize-none" value={formData.purpose} onChange={e => updateForm('purpose', e.target.value)} />
-                        <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
-                            <div>
-                                <label className="block text-xs font-bold text-white/70 mb-1">Expected Return Date</label>
-                                <input required type="date" className={INPUT_CLS + " h-10 md:h-auto"} value={formData.returnDate} onChange={e => updateForm('returnDate', e.target.value)} />
-                            </div>
-                            {eq === 'Car' ? (
-                                <div>
-                                    <label className="block text-xs font-bold text-white/70 mb-1">Borrow Time</label>
-                                    <input required type="time" className={INPUT_CLS + " h-10 md:h-auto"} value={formData.borrowTime} onChange={e => updateForm('borrowTime', e.target.value)} />
-                                </div>
-                            ) : null}
+                        <textarea required placeholder="PURPOSE OF USE..." className="w-full p-3 md:p-4 bg-white/30 dark:bg-[#252535]/60 backdrop-blur-sm rounded-xl h-20 md:h-28 border border-white/40 dark:border-[#3a3a4a] text-white placeholder-white/60 focus:ring-2 focus:ring-white/50 transition-all resize-none" value={formData.purpose} onChange={e => updateForm('purpose', e.target.value)} />
+                        <div>
+                            <label className="block text-xs font-bold text-white/70 mb-1">Expected Return Date</label>
+                            <input required type="date" className={INPUT_CLS + " h-10 md:h-auto"} value={formData.returnDate} onChange={e => updateForm('returnDate', e.target.value)} />
                         </div>
                         {eq === 'Car' ? (
                             <div>
