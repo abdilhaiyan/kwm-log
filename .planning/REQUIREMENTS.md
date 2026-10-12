@@ -25,10 +25,10 @@ Requirements for milestone v1.1. Each maps to a roadmap phase.
 
 ### Form Tweaks & Borrower Return Flow
 
-- [ ] **FORM-01**: Placeholders for 'Requested By' and 'Purpose of use' form inputs are in ALL CAPS
-- [ ] **FORM-02**: Vehicles equipment option renders the fuel level status bar selector
-- [ ] **FORM-03**: Mark Returned feature is moved/added to borrower status view so borrowers can mark items returned to company with auto date & time
-- [ ] **FORM-04**: Manual request time input is omitted from the vehicle borrow form section (captured automatically by system)
+- [x] **FORM-01**: Placeholders for 'Requested By' and 'Purpose of use' form inputs are in ALL CAPS
+- [x] **FORM-02**: Vehicles equipment option renders the fuel level status bar selector
+- [x] **FORM-03**: Mark Returned feature is moved/added to borrower status view so borrowers can mark items returned to company with auto date & time
+- [x] **FORM-04**: Manual request time input is omitted from the vehicle borrow form section (captured automatically by system)
 
 ## v2 Requirements
 
@@ -66,10 +66,10 @@ Which phases cover which requirements. Updated during roadmap creation.
 | UI-02 | Phase 5 | Complete |
 | UI-03 | Phase 5 | Complete |
 | UI-04 | Phase 5 | Complete |
-| FORM-01 | Phase 6 | Pending |
-| FORM-02 | Phase 6 | Pending |
-| FORM-03 | Phase 6 | Pending |
-| FORM-04 | Phase 6 | Pending |
+| FORM-01 | Phase 6 | Complete |
+| FORM-02 | Phase 6 | Complete |
+| FORM-03 | Phase 6 | Complete |
+| FORM-04 | Phase 6 | Complete |
 
 **Coverage:**
 
