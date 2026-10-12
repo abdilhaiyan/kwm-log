@@ -359,7 +359,7 @@
                 const eq = formData.cameraModel;
                 return (
                     <>
-                        <input required placeholder="REQUESTED BY" className={INPUT_CLS} value={formData.borrowerName} onChange={e => updateForm('borrowerName', e.target.value)} />
+                        <input required placeholder="Requested By" className={INPUT_CLS} value={formData.borrowerName} onChange={e => updateForm('borrowerName', e.target.value)} onInput={e => updateForm('borrowerName', e.target.value.toUpperCase())} onInput={e => updateForm('borrowerName', e.target.value.toUpperCase())} />
                         {eq === 'Other' && <input required placeholder="Equipment name (e.g. Tripod, Drone, Laptop)" className={INPUT_CLS} value={formData.customEquipment} onChange={e => updateForm('customEquipment', e.target.value)} />}
                         <select className={SELECT_CLS} value={formData.cameraModel} onChange={e => updateForm('cameraModel', e.target.value)}>
                             {equipmentOptions.map(o => <option key={o} value={o}>{getEquipDisplay(o)}</option>)}
@@ -373,7 +373,7 @@
                             {formData.cameraModel !== 'Car' && <input required type="email" placeholder="Email" inputMode="email" className={INPUT_CLS} value={formData.borrowerEmail} onChange={e => updateForm('borrowerEmail', e.target.value)} />}
                             <input required type="tel" placeholder="Phone" inputMode="tel" className={INPUT_CLS} value={formData.borrowerPhone} onChange={e => updateForm('borrowerPhone', e.target.value)} />
                         </div>
-                        <textarea required placeholder="PURPOSE OF USE..." className="w-full p-3 md:p-4 bg-white/30 dark:bg-[#252535]/60 backdrop-blur-sm rounded-xl h-20 md:h-28 border border-white/40 dark:border-[#3a3a4a] text-white placeholder-white/60 focus:ring-2 focus:ring-white/50 transition-all resize-none" value={formData.purpose} onChange={e => updateForm('purpose', e.target.value)} />
+                        <textarea required placeholder="Purpose of use..." className="w-full p-3 md:p-4 bg-white/30 dark:bg-[#252535]/60 backdrop-blur-sm rounded-xl h-20 md:h-28 border border-white/40 dark:border-[#3a3a4a] text-white placeholder-white/60 focus:ring-2 focus:ring-white/50 transition-all resize-none" value={formData.purpose} onChange={e => updateForm('purpose', e.target.value)} onInput={e => updateForm('purpose', e.target.value.toUpperCase())} onInput={e => updateForm('purpose', e.target.value.toUpperCase())} />
                         <div>
                             <label className="block text-xs font-bold text-white/70 mb-1">Expected Return Date</label>
                             <input required type="date" className={INPUT_CLS + " h-10 md:h-auto"} value={formData.returnDate} onChange={e => updateForm('returnDate', e.target.value)} />
@@ -423,6 +423,7 @@
                                         {unseenCount > 0 && <span className="absolute -top-1.5 -right-1.5 bg-red-500 text-white text-[9px] font-bold rounded-full min-w-[18px] h-[18px] flex items-center justify-center px-1">{unseenCount > 99 ? '99+' : unseenCount}</span>}
                                     </button>
                                     {isManagerAuthenticated && <button onClick={() => { setView('settings'); setTimeout(() => lucide.createIcons(), 100); }} className={`flex-1 md:flex-none px-4 md:px-6 py-2.5 rounded-xl text-[11px] md:text-xs font-bold transition-all ${view === 'settings' ? 'bg-white/80 dark:bg-white/20 text-slate-900 dark:text-white' : 'text-white/60 hover:text-white/80'}`}>Settings</button>}
+                                    <button onClick={() => setView('borrower-return')} className={`flex-1 md:flex-none px-4 md:px-6 py-2.5 rounded-xl text-[11px] md:text-xs font-bold transition-all ${view === 'borrower-return' ? 'bg-white/80 dark:bg-white/20 text-slate-900 dark:text-white' : 'text-white/60 hover:text-white/80'}`}>Borrower Return</button>
                                 </nav>
                                 <button onClick={() => setIsDarkMode(!isDarkMode)} className="p-2.5 rounded-xl bg-white/20 dark:bg-[#2a2a3a]/70 backdrop-blur-sm border border-white/30 dark:border-[#3a3a4a] text-white hover:bg-white/30 transition-all">
                                     {isDarkMode ? <Icon name="Sun" size={18} /> : <Icon name="Moon" size={18} />}
