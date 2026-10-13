@@ -1,0 +1,43 @@
+{
+  "contract": "1.0.0",
+  "flavor": "core",
+  "milestone": "v1.1 — Sortable Lists & Manager Styling",
+  "phases": [
+    {
+      "number": "1",
+      "name": "Multi-Block Decomposition",
+      "status": "complete"
+    },
+    {
+      "number": "2",
+      "name": "Config-Driven Passcode",
+      "status": "complete"
+    },
+    {
+      "number": "3",
+      "name": "Configurable Plat & Approver Dropdowns",
+      "status": "complete"
+    },
+    {
+      "number": "4",
+      "name": "Sortable List Reordering",
+      "status": "complete"
+    },
+    {
+      "number": "5",
+      "name": "Manager Glassmorphic Styling",
+      "status": "complete"
+    },
+    {
+      "number": "6",
+      "name": "Form Tweaks and Borrower Return Flow",
+      "status": "complete"
+    }
+  ],
+  "next": {
+    "command": "/gsd:complete-milestone",
+    "label": "Close milestone v1.1",
+    "reason": "All 6 phases complete and verified — milestone v1.1 ready to archive"
+  },
+  "updated_at": "2026-10-13T06:12:00.000Z"
+}

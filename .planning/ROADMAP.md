@@ -3,7 +3,7 @@
 ## Milestones
 
 - ✅ **v1.0 MVP** — Phases 1-3 (shipped 2026-09-15)
-- 🚧 **v1.1 Sortable Lists & Manager Styling** — Phases 4-6 (in progress)
+- ✅ **v1.1 Sortable Lists & Manager Styling** — Phases 4-6 (complete 2026-10-13, ready to archive)
 
 ## Phases
 
@@ -16,14 +16,14 @@
 
 </details>
 
-### 🚧 v1.1 Sortable Lists & Manager Styling (In Progress)
+### ✅ v1.1 Sortable Lists & Manager Styling (Complete)
 
 **Milestone Goal:** Managers can reorder the three dropdown lists (equipment, vehicle plates, approvers) via up/down controls in the Settings list cards — order persists to Firestore and syncs live to every surface that renders the list — and the Approve/Reject buttons match the translucent glassmorphic theme in both manager request cards and the detail modal.
 
-- [ ] **Phase 4: Sortable List Reordering** - Up/down reorder controls in all three Settings list cards; "Other" pinned last; order persists via Firestore and syncs to every list surface
-- [ ] **Phase 5: Manager Glassmorphic Styling** - Approve/Reject buttons restyled to the translucent glass theme in manager request cards and the detail modal
+- [x] **Phase 4: Sortable List Reordering** - Up/down reorder controls in all three Settings list cards; "Other" pinned last; order persists via Firestore and syncs to every list surface
+- [x] **Phase 5: Manager Glassmorphic Styling** - Approve/Reject buttons restyled to the translucent glass theme in manager request cards and the detail modal
 
-- [ ] **Phase 6: Form Tweaks and Borrower Return Flow** - Implement form uppercase placeholders, revert vehicle fuel bar visibility, move mark returned to borrower form, and omit manual request time for vehicles.
+- [x] **Phase 6: Form Tweaks and Borrower Return Flow** - Implement form uppercase placeholders, revert vehicle fuel bar visibility, move mark returned to borrower form, and omit manual request time for vehicles. Plus vehicle fuel-bar mode (VEH-01..05): plates removed, email hidden for vehicles, exact fuel labels, locked vehicle items, required fuel-bar choice on return.
 
 ## Phase Details
 
@@ -96,6 +96,6 @@ Phases execute in numeric order: 4 → 5
 | 1. Multi-Block Decomposition | v1.0 | 3/3 | Complete | 2026-09-13 |
 | 2. Config-Driven Passcode | v1.0 | 2/2 | Complete | 2026-09-14 |
 | 3. Configurable Plat & Approver Dropdowns | v1.0 | 1/1 | Complete | 2026-09-14 |
-| 4. Sortable List Reordering | v1.1 | 2/2 | Complete |  |
-| 5. Manager Glassmorphic Styling | v1.1 | 1/1 | Complete |  |
-| 6. Form Tweaks and Borrower Return Flow | v1.1 | 1/1 | In Progress|  |
+| 4. Sortable List Reordering | v1.1 | 2/2 | Complete | 2026-10-11 |
+| 5. Manager Glassmorphic Styling | v1.1 | 1/1 | Complete | 2026-10-11 |
+| 6. Form Tweaks and Borrower Return Flow | v1.1 | 2/2 | Complete | 2026-10-13 |

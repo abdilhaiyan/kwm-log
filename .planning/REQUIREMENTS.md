@@ -30,6 +30,14 @@ Requirements for milestone v1.1. Each maps to a roadmap phase.
 - [x] **FORM-03**: Mark Returned feature is moved/added to borrower status view so borrowers can mark items returned to company with auto date & time
 - [x] **FORM-04**: Manual request time input is omitted from the vehicle borrow form section (captured automatically by system)
 
+### Vehicle Fuel-Bar Mode
+
+- [x] **VEH-01**: Vehicle plates removed from the borrow form — plate is embedded in the equipment name (e.g., "WRD 5900 (Myvi)")
+- [x] **VEH-02**: Email input hidden when a vehicle equipment option is selected
+- [x] **VEH-03**: Fuel bar labels are exactly `1 Bar / 2 Bar / 3 Bar / 4 Bar / Full`
+- [x] **VEH-04**: Vehicle equipment items are locked in Settings (no reorder/edit); deletable only via passcode modal with a red warning
+- [x] **VEH-05**: Return fuel bar must be actively chosen — CONFIRM RETURN disabled until a bar is selected
+
 ## v2 Requirements
 
 Deferred to a future release. Tracked but not in the current roadmap.
@@ -70,11 +78,16 @@ Which phases cover which requirements. Updated during roadmap creation.
 | FORM-02 | Phase 6 | Complete |
 | FORM-03 | Phase 6 | Complete |
 | FORM-04 | Phase 6 | Complete |
+| VEH-01 | Phase 6 | Complete |
+| VEH-02 | Phase 6 | Complete |
+| VEH-03 | Phase 6 | Complete |
+| VEH-04 | Phase 6 | Complete |
+| VEH-05 | Phase 6 | Complete |
 
 **Coverage:**
 
-- v1 requirements: 14 total
-- Mapped to phases: 14
+- v1 requirements: 19 total
+- Mapped to phases: 19
 - Unmapped: 0 ✓
 
 ---
