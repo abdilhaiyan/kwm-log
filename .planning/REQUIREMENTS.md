@@ -18,10 +18,17 @@ Requirements for milestone v1.1. Each maps to a roadmap phase.
 
 ### Manager Styling
 
-- [ ] **UI-01**: Approve button on manager request cards uses the translucent glassmorphic theme
-- [ ] **UI-02**: Reject button on manager request cards uses the translucent glassmorphic theme
-- [ ] **UI-03**: Approve button in the request detail modal uses the translucent glassmorphic theme
-- [ ] **UI-04**: Reject button in the request detail modal uses the translucent glassmorphic theme
+- [x] **UI-01**: Approve button on manager request cards uses the translucent glassmorphic theme
+- [x] **UI-02**: Reject button on manager request cards uses the translucent glassmorphic theme
+- [x] **UI-03**: Approve button in the request detail modal uses the translucent glassmorphic theme
+- [x] **UI-04**: Reject button in the request detail modal uses the translucent glassmorphic theme
+
+### Form Tweaks & Borrower Return Flow
+
+- [x] **FORM-01**: Placeholders for 'Requested By' and 'Purpose of use' form inputs are in ALL CAPS
+- [x] **FORM-02**: Vehicles equipment option renders the fuel level status bar selector
+- [x] **FORM-03**: Mark Returned feature is moved/added to borrower status view so borrowers can mark items returned to company with auto date & time
+- [x] **FORM-04**: Manual request time input is omitted from the vehicle borrow form section (captured automatically by system)
 
 ## v2 Requirements
 
@@ -55,15 +62,19 @@ Which phases cover which requirements. Updated during roadmap creation.
 | SORT-04 | Phase 4 | Complete |
 | SORT-05 | Phase 4 | Complete |
 | SORT-06 | Phase 4 | Complete |
-| UI-01 | Phase 5 | Pending |
-| UI-02 | Phase 5 | Pending |
-| UI-03 | Phase 5 | Pending |
-| UI-04 | Phase 5 | Pending |
+| UI-01 | Phase 5 | Complete |
+| UI-02 | Phase 5 | Complete |
+| UI-03 | Phase 5 | Complete |
+| UI-04 | Phase 5 | Complete |
+| FORM-01 | Phase 6 | Complete |
+| FORM-02 | Phase 6 | Complete |
+| FORM-03 | Phase 6 | Complete |
+| FORM-04 | Phase 6 | Complete |
 
 **Coverage:**
 
-- v1 requirements: 10 total
-- Mapped to phases: 10
+- v1 requirements: 14 total
+- Mapped to phases: 14
 - Unmapped: 0 ✓
 
 ---

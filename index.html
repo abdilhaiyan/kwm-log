@@ -46,6 +46,9 @@
         const SELECT_CLS = "w-full p-3 md:p-4 bg-white/30 dark:bg-[#252535]/60 backdrop-blur-sm rounded-xl border border-white/40 dark:border-[#3a3a4a] text-white focus:ring-2 focus:ring-white/50 transition-all";
         const SELECT_CLS_SM = "w-full p-2 md:p-4 bg-white/30 dark:bg-[#252535]/60 backdrop-blur-sm rounded-xl border border-white/40 dark:border-[#3a3a4a] text-white text-sm focus:ring-2 focus:ring-white/50 transition-all";
         const INPUT_CLS_SM = "w-full p-2 md:p-4 bg-white/30 dark:bg-[#252535]/60 backdrop-blur-sm rounded-xl outline-none border border-white/40 dark:border-[#3a3a4a] text-white placeholder-white/60 text-sm focus:ring-2 focus:ring-white/50 transition-all";
+        // Vehicle equipment — these get the "Status of Fuel Bar" treatment instead of Equipment Condition
+        const VEHICLE_EQUIPMENT = ['WRD 5900 (Myvi)', 'NDC 264 (Motor)', 'Vehicle'];
+        const isVehicleEquipment = (name) => VEHICLE_EQUIPMENT.includes(name);
     </script>
     <script type="text/babel">
         const firebaseConfig = {
@@ -60,9 +63,8 @@
         // Manager passcode — edit to rotate
         const DEFAULT_PASSCODE = "1234";
         // Default dropdown lists — customized in Settings (stored in Firestore)
-        const DEFAULT_PLAT_OPTIONS = ['WRD 5900', 'Other'];
         const DEFAULT_APPROVER_OPTIONS = ['Shafiq', 'Other'];
-        const DEFAULT_EQUIPMENT_OPTIONS = ['DJI Osmo Action 6', 'Car', 'Other'];
+        const DEFAULT_EQUIPMENT_OPTIONS = ['DJI Osmo Action 6', 'WRD 5900 (Myvi)', 'NDC 264 (Motor)', 'Vehicle', 'Other'];
     </script>
     <script type="text/babel">
         let app, auth, db;
@@ -85,8 +87,14 @@
         };
         const getRequestDuration = (r) => { if (!r.returnDate || !r.requestedAt) return null; const d = Math.ceil((new Date(r.returnDate) - new Date(r.requestedAt)) / 86400000); return d > 0 ? `${d} days` : null; };
         const getEquipmentLabel = (r) => r.cameraModel === 'Other' ? (r.customEquipment || 'Other') : r.cameraModel;
-        const getEquipmentIcon = (r) => r.cameraModel === 'Car' ? 'Car' : r.cameraModel === 'Other' ? 'Package' : 'Camera';
+        const getEquipmentIcon = (r) => isVehicleEquipment(r.cameraModel) ? 'Car' : r.cameraModel === 'Other' ? 'Package' : 'Camera';
         const getEquipDisplay = (o) => o === 'Car' ? 'Vehicles' : o;
+        const normalizeEquipment = (list) => {
+            const arr = Array.isArray(list) ? list.slice() : [];
+            const others = arr.filter(o => o !== 'Other' && !VEHICLE_EQUIPMENT.includes(o));
+            const vehicles = VEHICLE_EQUIPMENT.filter(v => arr.includes(v));
+            return [...others, ...vehicles, 'Other'];
+        };
     </script>
     <script type="text/babel">
         const Icon = ({ name, size = 20, className = "" }) => {
@@ -105,8 +113,10 @@
     <script type="text/babel">
         const { useState, useEffect, useMemo } = React;
 
-        const ListEditor = ({ title, listKey, items, newVal, setNewVal, editing, setEditing, onAdd, onEdit, onRemove, onMoveUp, onMoveDown, onRequestDelete, placeholder }) => {
+        const ListEditor = ({ title, listKey, items, newVal, setNewVal, editing, setEditing, onAdd, onEdit, onRemove, onMoveUp, onMoveDown, onRequestDelete, placeholder, lockedItems = [], undeletableItems = [] }) => {
             const isEditing = editing && editing.list === listKey;
+            const isLocked = (o) => lockedItems.includes(o);
+            const isUndeletable = (o) => undeletableItems.includes(o);
             return (
                 <div className="glass-card bg-white/20 dark:bg-[#1e1e2a]/80 p-4 md:p-6 rounded-2xl md:rounded-3xl border border-white/30 dark:border-[#3a3a4a]">
                     <h3 className="text-sm md:text-base font-black text-white mb-3">{title}</h3>
@@ -122,10 +132,10 @@
                                 ) : (
                                     <>
                                         <span className="flex-1 text-sm text-white/80 truncate">{getEquipDisplay(o)}</span>
-                                        <button onClick={() => onMoveUp(i)} disabled={i === 0 || o === 'Other'} title={o === 'Other' ? 'Cannot reorder Other' : i === 0 ? 'Already at top' : 'Move up'} className={`w-6 h-6 rounded-full transition-all border flex items-center justify-center ${i === 0 || o === 'Other' ? 'bg-white/5 text-white/20 border-white/10 cursor-not-allowed' : 'bg-white/20 text-white/80 hover:bg-white/30 border border-white/30'}`}><Icon name="ArrowUp" size={12} /></button>
-                                        <button onClick={() => onMoveDown(i)} disabled={o === 'Other' || i >= items.length - 1 || items[i+1] === 'Other'} title={o === 'Other' ? 'Cannot reorder Other' : i >= items.length - 1 ? 'Already at bottom' : 'Move down'} className={`w-6 h-6 rounded-full transition-all border flex items-center justify-center ${o === 'Other' || i >= items.length - 1 || items[i+1] === 'Other' ? 'bg-white/5 text-white/20 border-white/10 cursor-not-allowed' : 'bg-white/20 text-white/80 hover:bg-white/30 border border-white/30'}`}><Icon name="ArrowDown" size={12} /></button>
-                                        <button onClick={() => setEditing({ list: listKey, idx: i, val: o })} disabled={o === 'Other'} title={o === 'Other' ? 'Cannot edit Other' : 'Edit'} className={`w-6 h-6 rounded-full transition-all border flex items-center justify-center ${o === 'Other' ? 'bg-white/5 text-white/20 border-white/10 cursor-not-allowed' : 'bg-blue-500/20 text-blue-300 hover:bg-blue-500/30 border-blue-400/30'}`}><Icon name="Pencil" size={12} /></button>
-                                        <button onClick={() => onRequestDelete(i, o)} disabled={o === 'Other'} title={o === 'Other' ? 'Cannot delete Other' : 'Delete'} className={`w-6 h-6 rounded-full transition-all border flex items-center justify-center ${o === 'Other' ? 'bg-white/5 text-white/20 border-white/10 cursor-not-allowed' : 'bg-red-500/20 text-red-300 hover:bg-red-500/30 border-red-400/30'}`}><Icon name="Trash2" size={12} /></button>
+                                        <button onClick={() => onMoveUp(i)} disabled={i === 0 || isLocked(o)} title={isLocked(o) ? 'Cannot reorder' : i === 0 ? 'Already at top' : 'Move up'} className={`w-6 h-6 rounded-full transition-all border flex items-center justify-center ${i === 0 || isLocked(o) ? 'bg-white/5 text-white/20 border-white/10 cursor-not-allowed' : 'bg-white/20 text-white/80 hover:bg-white/30 border border-white/30'}`}><Icon name="ArrowUp" size={12} /></button>
+                                        <button onClick={() => onMoveDown(i)} disabled={isLocked(o) || i >= items.length - 1 || isLocked(items[i+1])} title={isLocked(o) ? 'Cannot reorder' : i >= items.length - 1 ? 'Already at bottom' : 'Move down'} className={`w-6 h-6 rounded-full transition-all border flex items-center justify-center ${isLocked(o) || i >= items.length - 1 || isLocked(items[i+1]) ? 'bg-white/5 text-white/20 border-white/10 cursor-not-allowed' : 'bg-white/20 text-white/80 hover:bg-white/30 border border-white/30'}`}><Icon name="ArrowDown" size={12} /></button>
+                                        <button onClick={() => setEditing({ list: listKey, idx: i, val: o })} disabled={isLocked(o)} title={isLocked(o) ? 'Cannot edit' : 'Edit'} className={`w-6 h-6 rounded-full transition-all border flex items-center justify-center ${isLocked(o) ? 'bg-white/5 text-white/20 border-white/10 cursor-not-allowed' : 'bg-blue-500/20 text-blue-300 hover:bg-blue-500/30 border-blue-400/30'}`}><Icon name="Pencil" size={12} /></button>
+                                        <button onClick={() => onRequestDelete(i, o)} disabled={isUndeletable(o)} title={isUndeletable(o) ? 'Cannot delete' : 'Delete'} className={`w-6 h-6 rounded-full transition-all border flex items-center justify-center ${isUndeletable(o) ? 'bg-white/5 text-white/20 border-white/10 cursor-not-allowed' : 'bg-red-500/20 text-red-300 hover:bg-red-500/30 border-red-400/30'}`}><Icon name="Trash2" size={12} /></button>
                                     </>
                                 )}
                             </div>
@@ -160,22 +170,20 @@
             const [returnCondition, setReturnCondition] = useState('Excellent');
             const [detailModal, setDetailModal] = useState(null);
             const [filters, setFilters] = useState({ status: 'All', equipment: 'All', search: '', dateFrom: '', dateTo: '' });
-            const [platNumber, setPlatNumber] = useState('');
             const [approverName, setApproverName] = useState('');
-            const [customPlat, setCustomPlat] = useState('');
             const [customApprover, setCustomApprover] = useState('');
-            const [platOptions, setPlatOptions] = useState(DEFAULT_PLAT_OPTIONS);
             const [approverOptions, setApproverOptions] = useState(DEFAULT_APPROVER_OPTIONS);
             const [equipmentOptions, setEquipmentOptions] = useState(DEFAULT_EQUIPMENT_OPTIONS);
             const [pendingView, setPendingView] = useState('manager');
             const [deleteModal, setDeleteModal] = useState(null);
             const [deletePasscode, setDeletePasscode] = useState('');
-            const [newItem, setNewItem] = useState({ equipment: '', plat: '', approver: '' });
+            const [newItem, setNewItem] = useState({ equipment: '', approver: '' });
             const [editingList, setEditingList] = useState(null);
             const [appPasscode, setAppPasscode] = useState(DEFAULT_PASSCODE);
             const [passcodeForm, setPasscodeForm] = useState({ current: '', next: '', confirm: '' });
             const [listDeleteModal, setListDeleteModal] = useState(null);
             const [listDeletePasscode, setListDeletePasscode] = useState('');
+            const [borrowerNameFilter, setBorrowerNameFilter] = useState('');
 
             const unseenCount = requests.filter(r => !seenRequestIds.has(r.id)).length;
             const borrowerCounts = useMemo(() => requests.reduce((acc, r) => { acc[r.borrowerEmail] = (acc[r.borrowerEmail] || 0) + 1; return acc; }, {}), [requests]);
@@ -197,7 +205,7 @@
                     if (filters.status !== 'All' && r.status !== filters.status) return false;
                     if (filters.equipment !== 'All') {
                         if (filters.equipment === 'Other') {
-                            if (r.cameraModel === 'Car' || r.cameraModel === 'DJI Osmo Action 6') return false;
+                            if (r.cameraModel === 'DJI Osmo Action 6' || isVehicleEquipment(r.cameraModel)) return false;
                         } else if (r.cameraModel !== filters.equipment) return false;
                     }
                     if (filters.search) {
@@ -214,8 +222,14 @@
             useEffect(() => { localStorage.setItem('kwm_dark_mode', isDarkMode); document.documentElement.classList.toggle('dark', isDarkMode); }, [isDarkMode]);
             useEffect(() => { if (!auth) return; const unsub = auth.onAuthStateChanged(u => { if (!u) auth.signInAnonymously(); setUser(u); }); return () => unsub(); }, []);
             useEffect(() => { if (!user || !db) return; const q = db.collection('artifacts/' + appId + '/public/data/borrowing_requests'); return q.onSnapshot(s => { const docs = s.docs.map(d => ({ id: d.id, ...d.data() })); setRequests(docs.sort((a,b) => b.createdAt - a.createdAt)); setTimeout(() => lucide.createIcons(), 100); }); }, [user]);
-            useEffect(() => { if (!user || !db) return; const ref = db.collection('artifacts/' + appId + '/public/data/options').doc('lists'); return ref.onSnapshot(doc => { if (doc.exists) { const d = doc.data(); setPlatOptions(d.platOptions || DEFAULT_PLAT_OPTIONS); setApproverOptions(d.approverOptions || DEFAULT_APPROVER_OPTIONS); setEquipmentOptions(d.equipmentOptions || DEFAULT_EQUIPMENT_OPTIONS); if (d.passcode) setAppPasscode(d.passcode); } setTimeout(() => lucide.createIcons(), 100); }, err => console.error("Options load error:", err)); }, [user]);
+            useEffect(() => { if (!user || !db) return; const ref = db.collection('artifacts/' + appId + '/public/data/options').doc('lists'); return ref.onSnapshot(doc => { if (doc.exists) { const d = doc.data(); setApproverOptions(d.approverOptions || DEFAULT_APPROVER_OPTIONS); setEquipmentOptions(normalizeEquipment(d.equipmentOptions || DEFAULT_EQUIPMENT_OPTIONS)); if (d.passcode) setAppPasscode(d.passcode); } setTimeout(() => lucide.createIcons(), 100); }, err => console.error("Options load error:", err)); }, [user]);
             useEffect(() => { localStorage.setItem('kwm_seen_requests', JSON.stringify([...seenRequestIds])); }, [seenRequestIds]);
+            useEffect(() => {
+                if (view === 'settings') {
+                    const t = setTimeout(() => { if (window.lucide) lucide.createIcons(); }, 150);
+                    return () => clearTimeout(t);
+                }
+            }, [view]);;
 
             const handleNotify = (msg, type = 'success') => { setShowNotification({ msg, type }); setTimeout(() => setShowNotification(null), 4000); };
             const markRequestsAsSeen = () => { const ids = requests.map(r => r.id); setSeenRequestIds(prev => { const u = new Set(prev); ids.forEach(id => u.add(id)); return u; }); };
@@ -225,14 +239,11 @@
                 if (!db) { handleNotify("Database not initialized", "error"); return; }
                 setIsSending(true);
                 const finalCamera = formData.cameraModel === 'Other' ? formData.customEquipment : formData.cameraModel;
-                const finalPlat = platNumber === 'Other' ? customPlat : platNumber;
-                const payload = { ...formData, cameraModel: finalCamera, platNumber: formData.cameraModel === 'Car' ? finalPlat : '', status: 'Pending Approval', requestedAt: new Date().toLocaleString(), createdAt: Date.now() };
+                const payload = { ...formData, cameraModel: finalCamera, status: 'Pending Approval', requestedAt: new Date().toLocaleString(), createdAt: Date.now() };
                 try {
                     await db.collection('artifacts/' + appId + '/public/data/borrowing_requests').add(payload);
                     handleNotify("Request Logged Successfully");
                     setFormData({ borrowerName: '', borrowerEmail: '', borrowerPhone: '', cameraModel: 'DJI Osmo Action 6', customEquipment: '', purpose: '', returnDate: '', borrowTime: '', fuelLevel: 'Full', initialCondition: 'Excellent' });
-                    setPlatNumber('');
-                    setCustomPlat('');
                 } catch (err) { console.error("Error:", err); handleNotify("Error submitting", "error"); }
                 finally { setIsSending(false); }
             };
@@ -242,40 +253,42 @@
                 catch (err) { console.error("Error:", err); handleNotify("Error updating", "error"); }
             };
 
-            const saveOptions = async (plat, approver, equip) => {
+            const saveOptions = async (approver, equip) => {
                 if (!db) return;
-                try { await db.collection('artifacts/' + appId + '/public/data/options').doc('lists').set({ platOptions: plat, approverOptions: approver, equipmentOptions: equip }, { merge: true }); }
+                try { await db.collection('artifacts/' + appId + '/public/data/options').doc('lists').set({ approverOptions: approver, equipmentOptions: equip }, { merge: true }); }
                 catch (err) { console.error("Options save error:", err); handleNotify("Error saving lists", "error"); }
             };
             const addOption = (list, value) => {
                 const v = (value || '').trim(); if (!v) return;
-                const next = { equipment: equipmentOptions, plat: platOptions, approver: approverOptions };
+                const next = { equipment: equipmentOptions, approver: approverOptions };
                 if (next[list].includes(v)) { handleNotify("Already in list", "error"); return; }
-                const last = next[list][next[list].length - 1];
-                next[list] = last === 'Other' ? [...next[list].slice(0, -1), v, 'Other'] : [...next[list], v];
-                saveOptions(next.plat, next.approver, next.equipment);
+                const arr = next[list].slice();
+                const tailIdx = arr.findIndex(o => o === 'Other' || VEHICLE_EQUIPMENT.includes(o));
+                arr.splice(tailIdx === -1 ? arr.length : tailIdx, 0, v);
+                next[list] = arr;
+                saveOptions(next.approver, next.equipment);
                 setNewItem(p => ({ ...p, [list]: '' }));
             };
             const editOption = (list, idx, value) => {
                 const v = (value || '').trim(); if (!v) return;
-                const next = { equipment: equipmentOptions, plat: platOptions, approver: approverOptions };
+                const next = { equipment: equipmentOptions, approver: approverOptions };
                 next[list] = next[list].map((o, i) => i === idx ? v : o);
-                saveOptions(next.plat, next.approver, next.equipment);
+                saveOptions(next.approver, next.equipment);
                 setEditingList(null);
             };
             const removeOption = (list, idx) => {
-                const next = { equipment: equipmentOptions, plat: platOptions, approver: approverOptions };
+                const next = { equipment: equipmentOptions, approver: approverOptions };
                 if (next[list][idx] === 'Other') return;
                 next[list] = next[list].filter((_, i) => i !== idx);
-                saveOptions(next.plat, next.approver, next.equipment);
+                saveOptions(next.approver, next.equipment);
             };
             const moveOption = (list, fromIdx, toIdx) => {
-                const next = { equipment: equipmentOptions, plat: platOptions, approver: approverOptions };
+                const next = { equipment: equipmentOptions, approver: approverOptions };
                 const arr = [...next[list]];
                 if (toIdx < 0 || toIdx >= arr.length) return;
                 [arr[fromIdx], arr[toIdx]] = [arr[toIdx], arr[fromIdx]];
                 next[list] = arr;
-                saveOptions(next.plat, next.approver, next.equipment);
+                saveOptions(next.approver, next.equipment);
             }
             const confirmDelete = async () => {
                 if (!deleteModal) return;
@@ -303,15 +316,22 @@
                 setListDeletePasscode('');
             };
 
-            const markAsReturned = async () => { if (!returnConditionModal) return; await updateStatus(returnConditionModal.id, 'Returned', { returnedAt: new Date().toLocaleString(), returnCondition }); setReturnConditionModal(null); setReturnCondition('Excellent'); };
+            const openReturnModal = (req) => { setReturnConditionModal(req); setReturnCondition(isVehicleEquipment(req.cameraModel) ? '' : 'Excellent'); };
+            const markAsReturned = async () => {
+                if (!returnConditionModal) return;
+                if (isVehicleEquipment(returnConditionModal.cameraModel) && !returnCondition) { handleNotify("Please select the fuel bar status", "error"); return; }
+                await updateStatus(returnConditionModal.id, 'Returned', { returnedAt: new Date().toLocaleString(), returnCondition });
+                setReturnConditionModal(null);
+                setReturnCondition('Excellent');
+            };
 
             const copyDetails = (r) => {
                 const equipLabel = getEquipmentLabel(r);
                 let details = `KWM EQUIPMENT REQUEST\nStatus: ${r.status}\n\nStaff: ${r.borrowerName}\nEmail: ${r.borrowerEmail}\nPhone: ${r.borrowerPhone}\nEquipment: ${equipLabel}\nPurpose: ${r.purpose}\nReturn Date: ${r.returnDate || 'Not set'}\n`;
-                if (r.cameraModel === 'Car') { details += `Plat Number: ${r.platNumber || 'Not set'}\nBorrow Time: ${r.borrowTime || 'Not set'}\nFuel Level (borrow): ${r.fuelLevel || 'Not set'}\n`; if (r.status === 'Returned') details += `Fuel Level (return): ${r.returnCondition || 'Not set'}\n`; }
+                if (isVehicleEquipment(r.cameraModel)) { details += `Plat Number: ${r.platNumber || 'Not set'}\nBorrow Time: ${r.borrowTime || 'Not set'}\nFuel Bar (borrow): ${r.fuelLevel || 'Not set'}\n`; if (r.status === 'Returned') details += `Fuel Bar (return): ${r.returnCondition || 'Not set'}\n`; }
                 else { details += `Condition: ${r.initialCondition || 'Not set'}\n`; }
                 if (r.status === 'Approved') details += `\nApproved by: ${r.approvedBy || 'N/A'} on ${r.approvedAt || 'N/A'}\nPlease proceed to pickup.`;
-                else if (r.status === 'Returned') details += `\nReturned on ${r.returnedAt || 'N/A'}.${r.cameraModel === 'Car' ? '' : ` Condition: ${r.returnCondition || 'N/A'}`}`;
+                else if (r.status === 'Returned') details += `\nReturned on ${r.returnedAt || 'N/A'}.${isVehicleEquipment(r.cameraModel) ? '' : ` Condition: ${r.returnCondition || 'N/A'}`}`;
                 else if (r.status === 'Rejected') details += '\nRequest rejected.';
                 const tryCopy = async () => {
                     try {
@@ -343,7 +363,7 @@
                 const rows = [['Date Requested','Requested By','Email','Phone','Equipment','Plat Number','Purpose','Return Date','Status','Condition/Fuel','Borrow Time','Approved By']];
                 data.forEach(r => {
                     const equipLabel = getEquipmentLabel(r);
-                    rows.push([r.requestedAt || '', r.borrowerName, r.borrowerEmail, r.borrowerPhone, equipLabel, r.platNumber || '', r.purpose, r.returnDate || '', r.status, r.cameraModel === 'Car' ? r.fuelLevel : r.initialCondition, r.borrowTime || '', r.approvedBy || '']);
+                    rows.push([r.requestedAt || '', r.borrowerName, r.borrowerEmail, r.borrowerPhone, equipLabel, r.platNumber || '', r.purpose, r.returnDate || '', r.status, isVehicleEquipment(r.cameraModel) ? r.fuelLevel : r.initialCondition, r.borrowTime || '', r.approvedBy || '']);
                 });
                 const csv = rows.map(row => row.map(c => `"${(c||'').toString().replace(/"/g,'""')}"`).join(',')).join('\n');
                 const blob = new Blob([csv], { type: 'text/csv' });
@@ -359,41 +379,28 @@
                 const eq = formData.cameraModel;
                 return (
                     <>
-                        <input required placeholder="Requested By" className={INPUT_CLS} value={formData.borrowerName} onChange={e => updateForm('borrowerName', e.target.value)} />
+                        <input required placeholder="Requested By" style={{ textTransform: 'uppercase' }} className={INPUT_CLS} value={formData.borrowerName} onChange={e => updateForm('borrowerName', e.target.value.toUpperCase())} />
                         {eq === 'Other' && <input required placeholder="Equipment name (e.g. Tripod, Drone, Laptop)" className={INPUT_CLS} value={formData.customEquipment} onChange={e => updateForm('customEquipment', e.target.value)} />}
                         <select className={SELECT_CLS} value={formData.cameraModel} onChange={e => updateForm('cameraModel', e.target.value)}>
                             {equipmentOptions.map(o => <option key={o} value={o}>{getEquipDisplay(o)}</option>)}
                         </select>
-                        {eq === 'Car' && <select className={SELECT_CLS} value={platNumber} onChange={e => setPlatNumber(e.target.value)}>
-                            <option value="">Select vehicle</option>
-                            {platOptions.map(o => <option key={o} value={o}>{o}</option>)}
-                        </select>}
-                        {eq === 'Car' && platNumber === 'Other' && <input required placeholder="Vehicle plate (e.g. WRD 1234)" className={INPUT_CLS} value={customPlat} onChange={e => setCustomPlat(e.target.value)} />}
                         <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
-                            {formData.cameraModel !== 'Car' && <input required type="email" placeholder="Email" inputMode="email" className={INPUT_CLS} value={formData.borrowerEmail} onChange={e => updateForm('borrowerEmail', e.target.value)} />}
+                            {!isVehicleEquipment(formData.cameraModel) && <input required type="email" placeholder="Email" inputMode="email" className={INPUT_CLS} value={formData.borrowerEmail} onChange={e => updateForm('borrowerEmail', e.target.value)} />}
                             <input required type="tel" placeholder="Phone" inputMode="tel" className={INPUT_CLS} value={formData.borrowerPhone} onChange={e => updateForm('borrowerPhone', e.target.value)} />
                         </div>
-                        <textarea required placeholder="Purpose of use..." className="w-full p-3 md:p-4 bg-white/30 dark:bg-[#252535]/60 backdrop-blur-sm rounded-xl h-20 md:h-28 border border-white/40 dark:border-[#3a3a4a] text-white placeholder-white/60 focus:ring-2 focus:ring-white/50 transition-all resize-none" value={formData.purpose} onChange={e => updateForm('purpose', e.target.value)} />
-                        <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
-                            <div>
-                                <label className="block text-xs font-bold text-white/70 mb-1">Expected Return Date</label>
-                                <input required type="date" className={INPUT_CLS + " h-10 md:h-auto"} value={formData.returnDate} onChange={e => updateForm('returnDate', e.target.value)} />
-                            </div>
-                            {eq === 'Car' ? (
-                                <div>
-                                    <label className="block text-xs font-bold text-white/70 mb-1">Borrow Time</label>
-                                    <input required type="time" className={INPUT_CLS + " h-10 md:h-auto"} value={formData.borrowTime} onChange={e => updateForm('borrowTime', e.target.value)} />
-                                </div>
-                            ) : null}
+                        <textarea required placeholder="Purpose of use" style={{ textTransform: 'uppercase' }} className="w-full p-3 md:p-4 bg-white/30 dark:bg-[#252535]/60 backdrop-blur-sm rounded-xl h-20 md:h-28 border border-white/40 dark:border-[#3a3a4a] text-white placeholder-white/60 focus:ring-2 focus:ring-white/50 transition-all resize-none" value={formData.purpose} onChange={e => updateForm('purpose', e.target.value.toUpperCase())} />
+                        <div>
+                            <label className="block text-xs font-bold text-white/70 mb-1">Expected Return Date</label>
+                            <input required type="date" className={INPUT_CLS + " h-10 md:h-auto"} value={formData.returnDate} onChange={e => updateForm('returnDate', e.target.value)} />
                         </div>
-                        {eq === 'Car' ? (
+                        {isVehicleEquipment(eq) ? (
                             <div>
-                                <label className="block text-xs font-bold text-white/70 mb-1">Fuel Level</label>
+                                <label className="block text-xs font-bold text-white/70 mb-1">Status of Fuel Bar</label>
                                 <select className={SELECT_CLS} value={formData.fuelLevel} onChange={e => updateForm('fuelLevel', e.target.value)}>
-                                    <option value="1 bar">1 bar</option>
-                                    <option value="2 bar">2 bar</option>
-                                    <option value="3 bar">3 bar</option>
-                                    <option value="4 bar">4 bar</option>
+                                    <option value="1 Bar">1 Bar</option>
+                                    <option value="2 Bar">2 Bar</option>
+                                    <option value="3 Bar">3 Bar</option>
+                                    <option value="4 Bar">4 Bar</option>
                                     <option value="Full">Full</option>
                                 </select>
                             </div>
@@ -426,6 +433,7 @@
                             <div className="flex items-center gap-2 w-full md:w-auto">
                                 <nav className="flex-1 md:flex-none flex bg-white/20 dark:bg-[#2a2a3a]/70 backdrop-blur-xl p-1 rounded-2xl border border-white/30 dark:border-[#3a3a4a]">
                                     <button onClick={() => setView('request')} className={`flex-1 md:flex-none px-4 md:px-6 py-2.5 rounded-xl text-[11px] md:text-xs font-bold transition-all ${view === 'request' ? 'bg-white/80 dark:bg-white/20 text-slate-900 dark:text-white' : 'text-white/60 hover:text-white/80'}`}>Form</button>
+                                    <button onClick={() => setView('borrower-return')} className={`flex-1 md:flex-none px-4 md:px-6 py-2.5 rounded-xl text-[11px] md:text-xs font-bold transition-all ${view === 'borrower-return' ? 'bg-white/80 dark:bg-white/20 text-slate-900 dark:text-white' : 'text-white/60 hover:text-white/80'}`}>Borrower Return</button>
                                     <button onClick={() => { if (isManagerAuthenticated) { setView('manager'); markRequestsAsSeen(); } else { setPendingView('manager'); setShowPasscodeModal(true); } }} className={`relative flex-1 md:flex-none px-4 md:px-6 py-2.5 rounded-xl text-[11px] md:text-xs font-bold transition-all ${view === 'manager' ? 'bg-white/80 dark:bg-white/20 text-slate-900 dark:text-white' : 'text-white/60 hover:text-white/80'}`}>
                                         Manager
                                         {unseenCount > 0 && <span className="absolute -top-1.5 -right-1.5 bg-red-500 text-white text-[9px] font-bold rounded-full min-w-[18px] h-[18px] flex items-center justify-center px-1">{unseenCount > 99 ? '99+' : unseenCount}</span>}
@@ -459,9 +467,8 @@
                                         <div className="flex flex-col items-center gap-1"><span>Add</span><div className="w-3 h-3 rounded-full bg-white/20 border border-white/40 flex items-center justify-center"><Icon name="Plus" size={8} /></div></div>
                                     </div>
                                 </div>
-                                <ListEditor title="Equipment List" listKey="equipment" items={equipmentOptions} newVal={newItem.equipment} setNewVal={v => setNewItem(p => ({ ...p, equipment: v }))} editing={editingList} setEditing={setEditingList} onAdd={v => addOption('equipment', v)} onEdit={(i, v) => editOption('equipment', i, v)} onRemove={i => removeOption('equipment', i)} onMoveUp={(i) => moveOption('equipment', i, i - 1)} onMoveDown={(i) => moveOption('equipment', i, i + 1)} onRequestDelete={(i, o) => setListDeleteModal({ list: 'equipment', idx: i, value: o, title: 'Equipment List' })} placeholder="Add equipment (e.g. Tripod)" />
-                                <ListEditor title="Vehicle Plates List" listKey="plat" items={platOptions} newVal={newItem.plat} setNewVal={v => setNewItem(p => ({ ...p, plat: v }))} editing={editingList} setEditing={setEditingList} onAdd={v => addOption('plat', v)} onEdit={(i, v) => editOption('plat', i, v)} onRemove={i => removeOption('plat', i)} onMoveUp={(i) => moveOption('plat', i, i - 1)} onMoveDown={(i) => moveOption('plat', i, i + 1)} onRequestDelete={(i, o) => setListDeleteModal({ list: 'plat', idx: i, value: o, title: 'Vehicle Plates List' })} placeholder="Add vehicle plate (e.g. WRD 1234)" />
-                                <ListEditor title="Approvers List" listKey="approver" items={approverOptions} newVal={newItem.approver} setNewVal={v => setNewItem(p => ({ ...p, approver: v }))} editing={editingList} setEditing={setEditingList} onAdd={v => addOption('approver', v)} onEdit={(i, v) => editOption('approver', i, v)} onRemove={i => removeOption('approver', i)} onMoveUp={(i) => moveOption('approver', i, i - 1)} onMoveDown={(i) => moveOption('approver', i, i + 1)} onRequestDelete={(i, o) => setListDeleteModal({ list: 'approver', idx: i, value: o, title: 'Approvers List' })} placeholder="Add approver name (e.g. Ahmad)" />
+                                <ListEditor title="Equipment List" listKey="equipment" items={equipmentOptions} newVal={newItem.equipment} setNewVal={v => setNewItem(p => ({ ...p, equipment: v }))} editing={editingList} setEditing={setEditingList} onAdd={v => addOption('equipment', v)} onEdit={(i, v) => editOption('equipment', i, v)} onRemove={i => removeOption('equipment', i)} onMoveUp={(i) => moveOption('equipment', i, i - 1)} onMoveDown={(i) => moveOption('equipment', i, i + 1)} onRequestDelete={(i, o) => setListDeleteModal({ list: 'equipment', idx: i, value: o, title: 'Equipment List', isVehicle: VEHICLE_EQUIPMENT.includes(o) })} placeholder="Add equipment (e.g. Tripod)" lockedItems={['Other', ...VEHICLE_EQUIPMENT]} undeletableItems={['Other']} />
+                                <ListEditor title="Approvers List" listKey="approver" items={approverOptions} newVal={newItem.approver} setNewVal={v => setNewItem(p => ({ ...p, approver: v }))} editing={editingList} setEditing={setEditingList} onAdd={v => addOption('approver', v)} onEdit={(i, v) => editOption('approver', i, v)} onRemove={i => removeOption('approver', i)} onMoveUp={(i) => moveOption('approver', i, i - 1)} onMoveDown={(i) => moveOption('approver', i, i + 1)} onRequestDelete={(i, o) => setListDeleteModal({ list: 'approver', idx: i, value: o, title: 'Approvers List' })} placeholder="Add approver name (e.g. Ahmad)" lockedItems={['Other']} undeletableItems={['Other']} />
                                 <div className="glass-card bg-white/20 dark:bg-[#1e1e2a]/80 p-4 md:p-6 rounded-2xl md:rounded-3xl border border-white/30 dark:border-[#3a3a4a] border-l-4 border-l-purple-400/60">
                                     <h3 className="text-sm md:text-base font-black text-white mb-3">Change Passcode</h3>
                                     <div className="space-y-2 mb-3">
@@ -471,6 +478,52 @@
                                     </div>
                                     <button onClick={savePasscode} className="w-full px-4 py-2.5 rounded-xl bg-purple-500/20 text-purple-300 text-xs font-bold hover:bg-purple-500/30 transition-all border border-purple-400/30">SAVE PASSCODE</button>
                                 </div>
+                            </div>
+                        ) : view === 'borrower-return' ? (
+                            <div className="space-y-3 md:space-y-4">
+                                <div className="glass-card bg-white/20 dark:bg-[#1e1e2a]/80 p-4 md:p-6 rounded-2xl md:rounded-3xl border border-white/30 dark:border-[#3a3a4a]">
+                                    <h2 className="text-xl md:text-3xl font-black mb-1 text-white">Borrower Return</h2>
+                                    <p className="text-xs text-white/50 mb-4">Enter your name to see the items you have borrowed. Click MARK RETURNED once you have returned an item to the manager.</p>
+                                    <input placeholder="Enter your name..." className={INPUT_CLS} value={borrowerNameFilter} onChange={e => setBorrowerNameFilter(e.target.value)} />
+                                </div>
+                                {(() => {
+                                    const q = borrowerNameFilter.trim().toLowerCase();
+                                    if (!q) return (
+                                        <div className="glass-card bg-white/20 dark:bg-[#1e1e2a]/80 p-8 rounded-2xl md:rounded-3xl border border-white/30 dark:border-[#3a3a4a] text-center">
+                                            <Icon name="Search" size={48} className="text-white/40 mx-auto mb-4" />
+                                            <p className="text-white/60 font-medium">Enter your name above to view your borrowed items</p>
+                                        </div>
+                                    );
+                                    const mine = (requests || []).filter(r => (r.borrowerName || '').trim().toLowerCase() === q && (r.status === 'Approved' || r.status === 'Returned'));
+                                    if (mine.length === 0) return (
+                                        <div className="glass-card bg-white/20 dark:bg-[#1e1e2a]/80 p-8 rounded-2xl md:rounded-3xl border border-white/30 dark:border-[#3a3a4a] text-center">
+                                            <Icon name="Inbox" size={48} className="text-white/40 mx-auto mb-4" />
+                                            <p className="text-white/60 font-medium">No approved items found under "{borrowerNameFilter.trim()}"</p>
+                                        </div>
+                                    );
+                                    return mine.map(req => (
+                                        <div key={req.id} className={`glass-card bg-white/20 dark:bg-[#1e1e2a]/80 p-4 md:p-5 rounded-2xl border border-white/30 dark:border-[#3a3a4a] ${req.status === 'Returned' ? 'border-l-4 border-l-blue-400' : 'border-l-4 border-l-emerald-400'}`}>
+                                            <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-3">
+                                                <div className="min-w-0 flex-1">
+                                                    <div className="flex items-center gap-2 flex-wrap">
+                                                        <p className={`text-[10px] font-black uppercase ${STATUS_COLORS[req.status] || 'text-white/60'}`}>{req.status}</p>
+                                                        {req.passedAt && <span className="text-[10px] text-emerald-300">✓ Passed on {req.passedAt}</span>}
+                                                    </div>
+                                                    <h3 className="text-sm md:text-base font-bold text-white truncate">{getEquipmentLabel(req)}{req.platNumber ? ` · ${req.platNumber}` : ''}</h3>
+                                                    <p className="text-[10px] text-white/40 mt-0.5">Requested {req.requestedAt || 'N/A'}{req.returnDate ? ` · Return by ${new Date(req.returnDate).toLocaleDateString()}` : ''}</p>
+                                                    {req.approvedBy && <p className="text-[10px] text-emerald-300 mt-0.5">✓ Approved by {req.approvedBy}</p>}
+                                                    {req.status === 'Returned' && req.returnedAt && <p className="text-[10px] text-blue-300 mt-0.5">✓ Returned on {req.returnedAt}{req.returnCondition ? ` · ${isVehicleEquipment(req.cameraModel) ? 'Fuel Bar' : 'Condition'}: ${req.returnCondition}` : ''}</p>}
+                                                </div>
+                                                <div className="flex flex-col md:flex-row gap-2 shrink-0 w-full md:w-auto">
+                                                    {req.status === 'Approved' && !req.returnedAt && (
+                                                        <button onClick={() => openReturnModal(req)} className="w-full md:w-auto bg-blue-500/20 backdrop-blur-sm text-blue-300 px-5 py-2.5 rounded-xl text-[11px] md:text-xs font-bold hover:bg-blue-500/30 transition-all border border-blue-400/30">MARK RETURNED</button>
+                                                    )}
+                                                    <button onClick={() => copyDetails(req)} className="w-full md:w-auto bg-white/20 backdrop-blur-sm text-white px-5 py-2.5 rounded-xl text-[11px] md:text-xs font-bold hover:bg-white/30 transition-all border border-white/30">COPY INFO</button>
+                                                </div>
+                                            </div>
+                                        </div>
+                                    ));
+                                })()}
                             </div>
                         ) : (
                             <div className="space-y-3 md:space-y-4">
@@ -533,9 +586,9 @@
                                                     <p className="text-xs text-white/60 truncate">{equipLabel}{req.platNumber ? ` · ${req.platNumber}` : ''} · {req.borrowerPhone}</p>
                                                     {duration && <p className="text-[10px] text-white/40 mt-0.5">Borrowing for {duration}</p>}
                                                     {req.returnDate && <p className={`text-[10px] mt-0.5 ${daysInfo?.isOverdue ? 'text-amber-400 font-bold' : 'text-white/50'}`}>Return by: {new Date(req.returnDate).toLocaleDateString()} {daysInfo && `· ${daysInfo.text}`}</p>}
-                                                    {req.cameraModel === 'Car' && req.fuelLevel && <p className="text-[10px] text-white/40 mt-0.5">{req.status === 'Returned' ? `Borrow fuel: ${req.fuelLevel}` : `Fuel: ${req.fuelLevel}`}</p>}
+                                                    {isVehicleEquipment(req.cameraModel) && req.fuelLevel && <p className="text-[10px] text-white/40 mt-0.5">{req.status === 'Returned' ? `Borrowed fuel bar: ${req.fuelLevel}` : `Fuel Bar: ${req.fuelLevel}`}</p>}
                                                     {req.passedAt && <p className="text-[10px] text-emerald-300 mt-0.5">✓ Passed on {req.passedAt}</p>}
-                                                    {req.status === 'Returned' && req.returnCondition && <p className="text-[10px] text-blue-300 mt-0.5">{req.cameraModel === 'Car' ? `Returned fuel: ${req.returnCondition}` : `Returned: ${req.returnCondition}`}</p>}
+                                                    {req.status === 'Returned' && req.returnCondition && <p className="text-[10px] text-blue-300 mt-0.5">{isVehicleEquipment(req.cameraModel) ? `Returned fuel bar: ${req.returnCondition}` : `Returned: ${req.returnCondition}`}</p>}
                                                 </div>
                                                 <div className="flex flex-col md:flex-col gap-2 shrink-0 w-full md:w-auto" onClick={e => e.stopPropagation()}>
                                                     {req.status === 'Pending Approval' && (<>
@@ -544,12 +597,12 @@
                                                             {approverOptions.map(o => <option key={o} value={o}>{o}</option>)}
                                                         </select>
                                                         {approverName === 'Other' && <input required placeholder="Approver name (e.g. Ahmad)" className={INPUT_CLS_SM} value={customApprover} onChange={e => setCustomApprover(e.target.value)} />}
-                                                        <button onClick={() => { const finalApprover = approverName === 'Other' ? customApprover : approverName; updateStatus(req.id, 'Approved', { approvedBy: finalApprover || 'N/A', approvedAt: new Date().toLocaleString() }); }} className="w-full md:w-auto bg-emerald-500/80 backdrop-blur-sm text-white px-5 py-2.5 rounded-xl text-[11px] md:text-xs font-bold hover:bg-emerald-500 transition-all border border-emerald-400/30">APPROVE</button>
-                                                        <button onClick={() => updateStatus(req.id, 'Rejected')} className="w-full md:w-auto bg-red-500/80 backdrop-blur-sm text-white px-5 py-2.5 rounded-xl text-[11px] md:text-xs font-bold hover:bg-red-500 transition-all border border-red-400/30">REJECT</button>
+                                                        <button onClick={() => { const finalApprover = approverName === 'Other' ? customApprover : approverName; updateStatus(req.id, 'Approved', { approvedBy: finalApprover || 'N/A', approvedAt: new Date().toLocaleString() }); }} className="w-full md:w-auto bg-emerald-500/20 backdrop-blur-sm text-emerald-300 px-5 py-2.5 rounded-xl text-[11px] md:text-xs font-bold hover:bg-emerald-500/30 transition-all border border-emerald-400/30">APPROVE</button>
+                                                        <button onClick={() => updateStatus(req.id, 'Rejected')} className="w-full md:w-auto bg-red-500/20 backdrop-blur-sm text-red-300 px-5 py-2.5 rounded-xl text-[11px] md:text-xs font-bold hover:bg-red-500/30 transition-all border border-red-400/30">REJECT</button>
                                                     </>)}
                                                     {req.status === 'Approved' && (<>
                                                         {!req.passedAt && <button onClick={() => updateStatus(req.id, 'Approved', { passedAt: new Date().toLocaleString() })} className="w-full md:w-auto bg-amber-500/20 backdrop-blur-sm text-amber-300 px-5 py-2.5 rounded-xl text-[11px] md:text-xs font-bold hover:bg-amber-500/30 transition-all border border-amber-400/30">ITEM PASSED</button>}
-                                                        <button onClick={() => { setReturnConditionModal(req); setReturnCondition(req.cameraModel === 'Car' ? req.fuelLevel : 'Excellent'); }} className="w-full md:w-auto bg-blue-500/20 backdrop-blur-sm text-blue-300 px-5 py-2.5 rounded-xl text-[11px] md:text-xs font-bold hover:bg-blue-500/30 transition-all border border-blue-400/30">MARK RETURNED</button>
+                                                        <button onClick={() => openReturnModal(req)} className="w-full md:w-auto bg-blue-500/20 backdrop-blur-sm text-blue-300 px-5 py-2.5 rounded-xl text-[11px] md:text-xs font-bold hover:bg-blue-500/30 transition-all border border-blue-400/30">MARK RETURNED</button>
                                                         <button onClick={() => copyDetails(req)} className="w-full md:w-auto bg-white/20 backdrop-blur-sm text-white px-5 py-2.5 rounded-xl text-[11px] md:text-xs font-bold hover:bg-white/30 transition-all border border-white/30">COPY INFO</button>
                                                         {req.approvedBy && <span className="text-[10px] text-emerald-300 mt-0.5 md:mt-0">✓ Approved by {req.approvedBy}</span>}
                                                     </>)}
@@ -606,14 +659,31 @@
                     {listDeleteModal && (
                         <div className="fixed inset-0 z-50">
                             <div className="absolute inset-0 bg-black/50 backdrop-blur-sm" onClick={() => setListDeleteModal(null)} />
-                            <div className="absolute bottom-0 left-0 right-0 md:bottom-auto md:top-1/2 md:left-1/2 md:-translate-x-1/2 md:-translate-y-1/2 glass-card bg-white/20 dark:bg-[#1e1e2a]/90 p-6 md:p-8 rounded-t-2xl md:rounded-3xl w-full max-w-sm mx-auto border border-white/30 dark:border-[#3a3a4a]">
-                                <div className="w-10 h-1 bg-white/30 rounded-full mx-auto mb-4 md:hidden" />
-                                <h3 className="text-lg md:text-xl font-black mb-2 text-center text-white">Delete List Item</h3>
-                                <p className="text-xs text-white/60 text-center mb-4">Delete "{listDeleteModal.value}" from {listDeleteModal.title}? This cannot be undone.</p>
-                                <input type="password" autoFocus className={INPUT_CLS + " text-center text-xl md:text-2xl mb-4 placeholder-white/40"} placeholder="Manager passcode" value={listDeletePasscode} onChange={e => setListDeletePasscode(e.target.value)} onKeyDown={e => { if (e.key === 'Enter') confirmListDelete(); }} />
-                                <button onClick={confirmListDelete} className="w-full bg-red-500/80 backdrop-blur-sm text-white py-3.5 md:py-4 rounded-xl font-bold hover:bg-red-500 transition-all border border-red-400/30">CONFIRM DELETE</button>
-                                <button onClick={() => { setListDeleteModal(null); setListDeletePasscode(''); }} className="w-full mt-3 py-2 text-sm text-white/50 font-bold uppercase hover:text-white/80 transition-all">Cancel</button>
-                            </div>
+                            {listDeleteModal.isVehicle ? (
+                                <div className="absolute bottom-0 left-0 right-0 md:bottom-auto md:top-1/2 md:left-1/2 md:-translate-x-1/2 md:-translate-y-1/2 glass-card bg-red-500/20 dark:bg-red-950/60 backdrop-blur-xl p-6 md:p-8 rounded-t-2xl md:rounded-3xl w-full max-w-sm mx-auto border-2 border-red-400/70 shadow-[0_0_50px_rgba(239,68,68,0.6)]">
+                                    <div className="w-10 h-1 bg-red-400/60 rounded-full mx-auto mb-4 md:hidden" />
+                                    <div className="flex items-center justify-center gap-2 mb-2">
+                                        <Icon name="TriangleAlert" size={22} className="text-red-300" />
+                                        <h3 className="text-lg md:text-xl font-black text-center text-red-200">Delete Vehicle Item</h3>
+                                    </div>
+                                    <p className="text-xs text-red-100/90 text-center mb-3 font-bold">Delete "{listDeleteModal.value}" from {listDeleteModal.title}? This cannot be undone.</p>
+                                    <div className="bg-red-500/30 border border-red-400/50 rounded-xl p-3 mb-4">
+                                        <p className="text-[11px] text-red-100 text-center font-bold leading-relaxed">!! Warning: if this item is deleted, the form will revert back to the default and the fuel bar status can no longer be used. !!</p>
+                                    </div>
+                                    <input type="password" autoFocus className={INPUT_CLS + " text-center text-xl md:text-2xl mb-4 placeholder-white/40"} placeholder="Manager passcode" value={listDeletePasscode} onChange={e => setListDeletePasscode(e.target.value)} onKeyDown={e => { if (e.key === 'Enter') confirmListDelete(); }} />
+                                    <button onClick={confirmListDelete} className="w-full bg-red-600/90 backdrop-blur-sm text-white py-3.5 md:py-4 rounded-xl font-bold hover:bg-red-600 transition-all border border-red-300/50 shadow-[0_0_20px_rgba(239,68,68,0.5)]">CONFIRM DELETE</button>
+                                    <button onClick={() => { setListDeleteModal(null); setListDeletePasscode(''); }} className="w-full mt-3 py-2 text-sm text-red-100/70 font-bold uppercase hover:text-white transition-all">Cancel</button>
+                                </div>
+                            ) : (
+                                <div className="absolute bottom-0 left-0 right-0 md:bottom-auto md:top-1/2 md:left-1/2 md:-translate-x-1/2 md:-translate-y-1/2 glass-card bg-white/20 dark:bg-[#1e1e2a]/90 p-6 md:p-8 rounded-t-2xl md:rounded-3xl w-full max-w-sm mx-auto border border-white/30 dark:border-[#3a3a4a]">
+                                    <div className="w-10 h-1 bg-white/30 rounded-full mx-auto mb-4 md:hidden" />
+                                    <h3 className="text-lg md:text-xl font-black mb-2 text-center text-white">Delete List Item</h3>
+                                    <p className="text-xs text-white/60 text-center mb-4">Delete "{listDeleteModal.value}" from {listDeleteModal.title}? This cannot be undone.</p>
+                                    <input type="password" autoFocus className={INPUT_CLS + " text-center text-xl md:text-2xl mb-4 placeholder-white/40"} placeholder="Manager passcode" value={listDeletePasscode} onChange={e => setListDeletePasscode(e.target.value)} onKeyDown={e => { if (e.key === 'Enter') confirmListDelete(); }} />
+                                    <button onClick={confirmListDelete} className="w-full bg-red-500/80 backdrop-blur-sm text-white py-3.5 md:py-4 rounded-xl font-bold hover:bg-red-500 transition-all border border-red-400/30">CONFIRM DELETE</button>
+                                    <button onClick={() => { setListDeleteModal(null); setListDeletePasscode(''); }} className="w-full mt-3 py-2 text-sm text-white/50 font-bold uppercase hover:text-white/80 transition-all">Cancel</button>
+                                </div>
+                            )}
                         </div>
                     )}
 
@@ -624,10 +694,11 @@
                                 <div className="w-10 h-1 bg-white/30 rounded-full mx-auto mb-4 md:hidden" />
                                 <h3 className="text-lg md:text-xl font-black mb-2 text-center text-white">Mark as Returned</h3>
                                 <p className="text-xs text-white/60 text-center mb-4">{returnConditionModal.borrowerName} · {getEquipmentLabel(returnConditionModal)}</p>
-                                {returnConditionModal.cameraModel === 'Car' ? (<>
-                                    <label className="block text-xs font-bold text-white/70 mb-1">Return Fuel Level</label>
+                                {isVehicleEquipment(returnConditionModal.cameraModel) ? (<>
+                                    <label className="block text-xs font-bold text-white/70 mb-1">Status of Fuel Bar</label>
                                     <select className={SELECT_CLS + " mb-4"} value={returnCondition} onChange={e => setReturnCondition(e.target.value)}>
-                                        <option value="1 bar">1 bar</option><option value="2 bar">2 bar</option><option value="3 bar">3 bar</option><option value="4 bar">4 bar</option><option value="Full">Full</option>
+                                        <option value="">Select fuel bar</option>
+                                        <option value="1 Bar">1 Bar</option><option value="2 Bar">2 Bar</option><option value="3 Bar">3 Bar</option><option value="4 Bar">4 Bar</option><option value="Full">Full</option>
                                     </select>
                                 </>) : (<>
                                     <label className="block text-xs font-bold text-white/70 mb-1">Return Condition</label>
@@ -635,7 +706,7 @@
                                         <option value="Excellent">Excellent</option><option value="Good">Good</option><option value="Fair">Fair</option><option value="Damaged">Damaged</option>
                                     </select>
                                 </>)}
-                                <button onClick={markAsReturned} className="w-full bg-blue-500/80 backdrop-blur-sm text-white py-3.5 md:py-4 rounded-xl font-bold hover:bg-blue-500 transition-all border border-blue-400/30">CONFIRM RETURN</button>
+                                <button onClick={markAsReturned} disabled={isVehicleEquipment(returnConditionModal.cameraModel) && !returnCondition} className={`w-full backdrop-blur-sm text-white py-3.5 md:py-4 rounded-xl font-bold transition-all border border-blue-400/30 ${isVehicleEquipment(returnConditionModal.cameraModel) && !returnCondition ? 'bg-blue-500/30 opacity-50 cursor-not-allowed' : 'bg-blue-500/80 hover:bg-blue-500'}`}>CONFIRM RETURN</button>
                                 <button onClick={() => setReturnConditionModal(null)} className="w-full mt-3 py-2 text-sm text-white/50 font-bold uppercase hover:text-white/80 transition-all">Cancel</button>
                             </div>
                         </div>
@@ -660,12 +731,12 @@
                                     {detailModal.platNumber && <div className="flex justify-between"><span className="text-white/50">Plat Number</span><span className="text-white font-medium">{detailModal.platNumber}</span></div>}
                                     <div className="flex justify-between"><span className="text-white/50">Purpose</span><span className="text-white font-medium text-right max-w-[60%]">{detailModal.purpose}</span></div>
                                     <div className="flex justify-between"><span className="text-white/50">Return Date</span><span className="text-white font-medium">{detailModal.returnDate || 'Not set'}</span></div>
-                                    {detailModal.cameraModel === 'Car' && (<>
+                                    {isVehicleEquipment(detailModal.cameraModel) && (<>
                                         <div className="flex justify-between"><span className="text-white/50">Borrow Time</span><span className="text-white font-medium">{detailModal.borrowTime || 'Not set'}</span></div>
-                                        <div className="flex justify-between"><span className="text-white/50">Fuel Level (borrow)</span><span className="text-white font-medium">{detailModal.fuelLevel || 'Not set'}</span></div>
-                                        {detailModal.status === 'Returned' && <div className="flex justify-between"><span className="text-white/50">Fuel Level (return)</span><span className="text-white font-medium">{detailModal.returnCondition || 'Not set'}</span></div>}
+                                        <div className="flex justify-between"><span className="text-white/50">Fuel Bar (borrow)</span><span className="text-white font-medium">{detailModal.fuelLevel || 'Not set'}</span></div>
+                                        {detailModal.status === 'Returned' && <div className="flex justify-between"><span className="text-white/50">Fuel Bar (return)</span><span className="text-white font-medium">{detailModal.returnCondition || 'Not set'}</span></div>}
                                     </>)}
-                                    {detailModal.cameraModel !== 'Car' && <div className="flex justify-between"><span className="text-white/50">Condition</span><span className="text-white font-medium">{detailModal.initialCondition || 'Not set'}</span></div>}
+                                    {!isVehicleEquipment(detailModal.cameraModel) && <div className="flex justify-between"><span className="text-white/50">Condition</span><span className="text-white font-medium">{detailModal.initialCondition || 'Not set'}</span></div>}
                                     {detailModal.passedAt && (<>
                                         <div className="flex justify-between"><span className="text-white/50">Item Passed On</span><span className="text-emerald-300 font-medium">{detailModal.passedAt}</span></div>
                                     </>)}
@@ -675,7 +746,7 @@
                                     {detailModal.status === 'Returned' && (<>
                                         <hr className="border-white/10" />
                                         <div className="flex justify-between"><span className="text-white/50">Returned On</span><span className="text-white font-medium">{detailModal.returnedAt || 'N/A'}</span></div>
-                                        {detailModal.cameraModel !== 'Car' && <div className="flex justify-between"><span className="text-white/50">Return Condition</span><span className="text-white font-medium">{detailModal.returnCondition || 'N/A'}</span></div>}
+                                        {!isVehicleEquipment(detailModal.cameraModel) && <div className="flex justify-between"><span className="text-white/50">Return Condition</span><span className="text-white font-medium">{detailModal.returnCondition || 'N/A'}</span></div>}
                                     </>)}
                                     <hr className="border-white/10" />
                                     <div className="flex justify-between"><span className="text-white/50">Requested</span><span className="text-white/70 text-xs">{detailModal.requestedAt || 'N/A'}</span></div>
@@ -687,12 +758,12 @@
                                             {approverOptions.map(o => <option key={o} value={o}>{o}</option>)}
                                         </select>
                                         {approverName === 'Other' && <input required placeholder="Approver name (e.g. Ahmad)" className={INPUT_CLS_SM} value={customApprover} onChange={e => setCustomApprover(e.target.value)} />}
-                                        <button onClick={() => { const finalApprover = approverName === 'Other' ? customApprover : approverName; updateStatus(detailModal.id, 'Approved', { approvedBy: finalApprover || 'N/A', approvedAt: new Date().toLocaleString() }); setDetailModal(null); }} className="w-full md:flex-1 bg-emerald-500/80 backdrop-blur-sm text-white py-3 rounded-xl font-bold hover:bg-emerald-500 transition-all border border-emerald-400/30">APPROVE</button>
-                                        <button onClick={() => { updateStatus(detailModal.id, 'Rejected'); setDetailModal(null); }} className="w-full md:flex-1 bg-red-500/80 backdrop-blur-sm text-white py-3 rounded-xl font-bold hover:bg-red-500 transition-all border border-red-400/30">REJECT</button>
+                                                        <button onClick={() => { const finalApprover = approverName === 'Other' ? customApprover : approverName; updateStatus(detailModal.id, 'Approved', { approvedBy: finalApprover || 'N/A', approvedAt: new Date().toLocaleString() }); setDetailModal(null); }} className="w-full md:flex-1 bg-emerald-500/20 backdrop-blur-sm text-emerald-300 py-3 rounded-xl font-bold hover:bg-emerald-500/30 transition-all border border-emerald-400/30">APPROVE</button>
+                                                        <button onClick={() => { updateStatus(detailModal.id, 'Rejected'); setDetailModal(null); }} className="w-full md:flex-1 bg-red-500/20 backdrop-blur-sm text-red-300 py-3 rounded-xl font-bold hover:bg-red-500/30 transition-all border border-red-400/30">REJECT</button>
                                     </>)}
                                     {detailModal.status === 'Approved' && (<>
                                         {!detailModal.passedAt && <button onClick={() => { updateStatus(detailModal.id, 'Approved', { passedAt: new Date().toLocaleString() }); setDetailModal({...detailModal, passedAt: new Date().toLocaleString()}); }} className="w-full md:flex-1 bg-amber-500/20 backdrop-blur-sm text-amber-300 py-3 rounded-xl font-bold hover:bg-amber-500/30 transition-all border border-amber-400/30">ITEM PASSED</button>}
-                                        <button onClick={() => { setReturnConditionModal(detailModal); setReturnCondition(detailModal.cameraModel === 'Car' ? detailModal.fuelLevel : 'Excellent'); setDetailModal(null); }} className="w-full md:flex-1 bg-blue-500/20 backdrop-blur-sm text-blue-300 py-3 rounded-xl font-bold hover:bg-blue-500/30 transition-all border border-blue-400/30">MARK RETURNED</button>
+                                        <button onClick={() => { openReturnModal(detailModal); setDetailModal(null); }} className="w-full md:flex-1 bg-blue-500/20 backdrop-blur-sm text-blue-300 py-3 rounded-xl font-bold hover:bg-blue-500/30 transition-all border border-blue-400/30">MARK RETURNED</button>
                                         <button onClick={() => copyDetails(detailModal)} className="w-full md:flex-1 bg-white/20 backdrop-blur-sm text-white py-3 rounded-xl font-bold hover:bg-white/30 transition-all border border-white/30">COPY INFO</button>
                                     </>)}
                                     {detailModal.status === 'Rejected' && <button onClick={() => { updateStatus(detailModal.id, 'Pending Approval'); setDetailModal(null); }} className="w-full bg-white/20 backdrop-blur-sm text-white py-3 rounded-xl font-bold hover:bg-white/30 transition-all border border-white/30">UNDO REJECT</button>}
